@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "X Article Clipper",
+  "short_name": "X Clipper",
+  "version": "1.0.0",
+  "description": "Save and organize X Articles locally, then preview or copy clean Markdown.",
+  "permissions": ["storage", "sidePanel", "scripting"],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://www.x.com/*",
+    "https://twitter.com/*",
+    "https://www.twitter.com/*"
+  ],
+  "action": {
+    "default_title": "Open X Article Clipper",
+    "default_icon": {
+      "16": "assets/icons/x-clipper-icon-16.png",
+      "32": "assets/icons/x-clipper-icon-32.png",
+      "48": "assets/icons/x-clipper-icon-48.png",
+      "128": "assets/icons/x-clipper-icon-128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "assets/icons/x-clipper-icon-16.png",
+    "32": "assets/icons/x-clipper-icon-32.png",
+    "48": "assets/icons/x-clipper-icon-48.png",
+    "128": "assets/icons/x-clipper-icon-128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://www.x.com/*",
+        "https://twitter.com/*",
+        "https://www.twitter.com/*"
+      ],
+      "js": ["markdown.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
