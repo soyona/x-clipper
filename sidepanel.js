@@ -240,7 +240,7 @@ async function handleAction(action, target) {
   }
   if (!asset) return;
   if (action === "asset-preview") {
-    await send({ type: "open-markdown-preview", capture: asset, canSave: false });
+    await send({ type: "open-markdown-preview", assetId: asset.id });
     return;
   }
   if (action === "asset-toggle-used") {

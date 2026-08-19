@@ -33,7 +33,7 @@
 ### 旅程捷径与失败规则
 
 - 用户可直接打开 Article 详情并保存为素材，不必先加入待读；结果仍进入同一素材状态。
-- 用户可在 Article 详情先预览/复制而不保存；Preview 是一次性会话，不产生持久数据。
+- 用户可在 Article 详情先预览/复制而不保存；Preview 在当前浏览器会话内可刷新，但不产生持久产品数据。
 - Post 详情复制成功或失败都不产生产品状态；Post 回复、引用和推荐 Card 不参与旅程。
 - Article 采集失败、原文 URL 不一致或 Markdown 为空时，不创建素材、不移出待读，并向用户显示可操作错误。
 
@@ -46,7 +46,7 @@
 | 普通 Post 列表 | 否 | 无 | 无 | 不干扰即时浏览 |
 | Post 详情 | 仅当前 URL 对应的主 Post | Grok actions 左侧的独立 x-clipper 入口 | “复制 Markdown” | 写入剪贴板；不预览、不持久化 |
 | Article 列表 | 仅可确认的 Article Card | Card 内 Grok actions 左侧的独立入口 | “加入待读/从待读移除” | 更新待读；不采集正文 |
-| Article 详情 | 仅当前权威主 Article | Grok/Summarize 左侧的独立入口 | 依次为“保存为素材/从素材库移除”“预览 / 复制 Markdown”“收藏作者/取消收藏作者” | 更新素材、打开一次性 Preview 或更新作者 |
+| Article 详情 | 仅当前权威主 Article | Grok/Summarize 左侧的独立入口 | 依次为“保存为素材/从素材库移除”“预览 / 复制 Markdown”“收藏作者/取消收藏作者” | 更新素材、打开当前会话 Preview 或更新作者 |
 | Side Panel 待读 | 始终可用 | 一级导航“待读” | 搜索、打开原文、移除 | 回到原文或未管理状态 |
 | Side Panel 素材库 | 始终可用 | 一级导航“素材库” | 搜索、筛选、标签、预览/复制、使用状态、删除 | 管理可复用素材生命周期 |
 | Side Panel 作者 | 始终可用 | 一级导航“作者” | 打开作者 Articles、取消收藏 | 继续发现或移除作者 |
@@ -102,7 +102,7 @@ Side Panel
 ### 独立与瞬时状态
 
 - 作者只有“未收藏/已收藏”两个独立状态，按 handle 去重；它不随 Article 素材状态自动变化。
-- Preview 是 `未打开 → 当前页 Preview/素材 Preview → 已消费` 的 session 瞬时状态，不属于持久化闭环。
+- Preview 是 `未打开 → 当前页 Preview/素材 Preview → 关闭或会话结束` 的阅读状态，不属于持久化闭环；页面刷新不得消费预览。素材 Preview 从持久素材重建，当前页 Preview 由唯一 session ID 隔离。
 - Post 永远保持非管理对象；复制 Markdown 是一次性动作，不产生 reading、asset 或 author 状态。
 
 ## 视觉语言
@@ -116,7 +116,7 @@ Side Panel
 
 - 图标先满足动作语义，再满足 X 风格。统一使用 `24×24` viewBox、24px 菜单槽位、18.75–26px 可见尺寸、`currentColor`、固定点击热区和当前页填充态。
 - X Article Clipper 页面入口使用独立的圆形书写轨迹与铅笔图形；待读使用收件托盘；素材库使用 Bookmark；作者使用人物集合。
-- 保存素材使用 Bookmark-plus；预览 Article 使用 Article-eye；复制 Markdown 使用 Markdown-copy；收藏或取消收藏作者使用 person-add/person-remove。
+- X 页面菜单的状态动作遵循 X 官方语义：待读和素材的加入／保存使用对象轮廓态，移出使用同一对象的实心态；作者保留 X 的 person-add/person-remove 图形。三种反向动作均仅将图标设为 `#f4212e`，标签保持中性色。素材使用用户提供的 X 官方 Bookmark／Remove from Bookmarks path；预览 Article 使用 Article-eye；复制 Markdown 使用 Markdown-copy。
 - UI 图标的项目级单一权威源为 `assets/icons/x-clipper-ui-icons.svg`，稳定 `symbol id`、语义映射、状态和验收图以 `docs/design/icon-system.md` 为准。运行时即使因 Content Script 隔离而采用内联 SVG，也必须与权威源保持相同图形和 token。
 - 新增界面必须先复用权威图标库；缺少语义时，必须先取得用户提供的 X SVG／组件证据，再同步补充图标库、规范图、语义映射和契约测试。不得在业务代码中先加入临时 path，后补规范。
 - 不复制已连接的 X DOM/SVG，不用 emoji、Unicode 符号或临时字符替代图标。缺少图标证据时向用户索取 DevTools 中的最小 SVG 片段，不自行猜测 path。

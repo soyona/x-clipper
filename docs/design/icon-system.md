@@ -6,8 +6,10 @@
 
 1. 品牌源：`assets/icons/x-clipper-icon-source.svg`、`assets/icons/x-clipper-entry.svg`。
 2. UI 图标库：`assets/icons/x-clipper-ui-icons.svg`；`symbol id` 是组件调用的稳定语义标识。
-3. 视觉规范图：`docs/design/x-clipper-ui-icon-spec.svg`；`docs/design/x-clipper-ui-icon-spec.png` 是其人工查看版本。
+3. 视觉规范图：`docs/design/x-clipper-ui-icon-spec.svg`；该文件必须物化为包含完整本地 Symbol 的自包含 SVG，不得依赖外部 Fragment。`docs/design/x-clipper-ui-icon-spec.png` 是其人工查看版本。
 4. 运行时内联 SVG 必须与图标库中同语义 `symbol` 保持相同的图形、viewBox、描边和填充规则。
+
+规范图中的本地 Symbol 由 `scripts/materialize-icon-spec.mjs` 从权威图标库机械同步；不得手工重画或独立维护第二套 path。
 
 后续新增或修改按钮、菜单、导航时，必须先从图标库按语义选用。若不存在对应语义，须先基于用户提供的 X SVG／组件证据补充图标库、映射表和契约测试，再进入业务界面；禁止临时内联自创 path、emoji 或 Unicode 图标。
 
@@ -49,7 +51,11 @@
 | 搜索／更多／添加／关闭／复制 | `search`／`more`／`add`／`close`／`copy` |
 | 蓝色／金色认证身份 | `verified-blue`／`verified-gold` |
 
-菜单统一使用 `24×24` 图标槽、约 `1.9px` 圆角描边、`currentColor` 和 `12px` 图文间距。相反动作不得复用完全相同的图形。
+菜单统一使用 `24×24` 图标槽、约 `1.9px` 圆角描边、`currentColor` 和 `12px` 图文间距。待读和素材沿用 X 官方 Bookmark 的轮廓／实心语义：加入或保存为黑色轮廓态，移出为同一对象的实心态；作者保留 X 的 person-add/person-remove 图形。三种反向动作均只将图标设为 X destructive `#f4212e`，标签保持中性色。不得再叠加微小的 `+`／`−` 区分待读或素材状态。
+
+素材状态的两条 Bookmark path 来自用户通过 X DevTools 提供的官方 `Bookmark`／`Remove from Bookmarks` SVG；`library-add` 必须保留官方轮廓 path，`library-remove` 必须保留官方实心 path。
+
+`author-add` 与 `author-remove` 必须复用完全相同的实心单人头像与躯干几何，只允许右上角动作标记不同：加入为两笔 `+`，移除为两笔等长 `×`。不得分别维护两套人物 path，也不得将 `×` 合并为自交填充 path，避免在 24px 下产生人物漂移或退化为点状、菱形。
 
 认证徽标不是动作图标，运行时使用 X 的原始 `22×22` 几何：蓝色为 `#1d9bf0` 单色 path，金色保留 X 的双渐变与底部阴影 path。两类 SVG 均来自用户通过 X DevTools 提供的 `data-testid="icon-verified"` 证据；不得用布尔认证状态或自制简化 path 替代。
 

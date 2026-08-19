@@ -4,7 +4,10 @@ const copyButton = document.querySelector("#copy");
 const saveButton = document.querySelector("#save");
 const previewTitle = document.querySelector("#preview-title");
 const previewSubtitle = document.querySelector("#preview-subtitle");
+const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
+const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 let preview = null;
+let temporaryPreviewKey = "";
 
 function text(value) {
   return String(value || "");
@@ -105,11 +108,32 @@ function renderPreview(value) {
 
 async function loadPreview() {
   try {
-    const result = await chrome.storage.session.get("library-markdown-preview");
-    await chrome.storage.session.remove("library-markdown-preview");
-    if (!result["library-markdown-preview"]) throw new Error("预览已过期，请返回 X 或素材库重新打开。");
-    renderPreview(result["library-markdown-preview"]);
+    const params = new URLSearchParams(location.search);
+    const mode = params.get("mode");
+    if (mode === "library") {
+      const assetId = params.get("assetId") || "";
+      if (!assetId) throw new Error("预览链接无效，请返回素材库重新打开。");
+      const stored = await chrome.storage.local.get(CONTENT_INBOX_STORAGE_KEY);
+      const inbox = stored[CONTENT_INBOX_STORAGE_KEY];
+      const asset = inbox?.schemaVersion === 1 && Array.isArray(inbox.assets)
+        ? inbox.assets.find((item) => item.id === assetId)
+        : null;
+      if (!asset) throw new Error("素材不存在或已被删除，请返回素材库重新打开。");
+      renderPreview({ ...asset, canSave: false });
+      return;
+    }
+    const previewId = params.get("previewId") || "";
+    if (mode !== "current" || !/^[0-9a-f-]{36}$/iu.test(previewId)) {
+      throw new Error("预览链接无效，请返回 X 重新打开。");
+    }
+    temporaryPreviewKey = `${MARKDOWN_PREVIEW_STORAGE_PREFIX}${previewId}`;
+    const result = await chrome.storage.session.get(temporaryPreviewKey);
+    if (!result[temporaryPreviewKey]) throw new Error("预览已过期，请返回 X 重新打开。");
+    renderPreview(result[temporaryPreviewKey]);
   } catch (error) {
+    preview = null;
+    copyButton.disabled = true;
+    saveButton.hidden = true;
     article.innerHTML = `<p class="empty">${escapeHtml(error.message || "无法打开预览。")}</p>`;
     status.textContent = "预览不可用";
   }
@@ -138,6 +162,7 @@ saveButton.addEventListener("click", async () => {
     if (result?.error) throw new Error(result.error);
     preview.canSave = false;
     saveButton.hidden = true;
+    if (temporaryPreviewKey) await chrome.storage.session.set({ [temporaryPreviewKey]: preview });
     status.textContent = "已保存为素材";
   } catch (error) {
     status.textContent = error.message || "保存失败";
@@ -145,7 +170,10 @@ saveButton.addEventListener("click", async () => {
   }
 });
 
-document.querySelector("#close").addEventListener("click", () => window.close());
+document.querySelector("#close").addEventListener("click", async () => {
+  if (temporaryPreviewKey) await chrome.storage.session.remove(temporaryPreviewKey);
+  window.close();
+});
 article.addEventListener("click", async (event) => {
   const button = event.target.closest?.("[data-code-copy]");
   if (!button) return;

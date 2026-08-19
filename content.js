@@ -548,7 +548,7 @@ async function extractAndCopyCurrentPage() {
 async function previewCurrentPageMarkdown(candidate = null, root = null) {
   if (candidate?.contentType !== "article") throw new Error("只有 Article 支持 Markdown 预览。");
   const capture = await capturePage(root || findRoot(), candidate?.sourceUrl || location.href, candidate, { validateLocation: true });
-  const result = await chrome.runtime.sendMessage({ type: "open-markdown-preview", capture, canSave: true });
+  const result = await chrome.runtime.sendMessage({ type: "open-markdown-preview", capture });
   if (result?.error) throw new Error(result.error);
 }
 
@@ -851,39 +851,39 @@ function startArticleActionsEntryObserver() {
   scheduleArticleActionsEntries({ scanVisible: true });
 }
 
+const AUTHOR_PERSON_GEOMETRY = '<g fill="currentColor"><circle cx="9" cy="6.5" r="3"></circle><path d="M3.25 20c.3-5.35 2.2-8 5.75-8s5.45 2.65 5.75 8H3.25z"></path></g>';
+
 function saveAuthorIcon() {
-  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4c-1.105 0-2 .9-2 2s.895 2 2 2 2-.9 2-2-.895-2-2-2zM6 6c0-2.21 1.791-4 4-4s4 1.79 4 4-1.791 4-4 4-4-1.79-4-4zm13 4v3h2v-3h3V8h-3V5h-2v3h-3v2h3zM3.651 19h12.698c-.337-1.8-1.023-3.21-1.945-4.19C13.318 13.65 11.838 13 10 13s-3.317.65-4.404 1.81c-.922.98-1.608 2.39-1.945 4.19zm.486-5.56C5.627 11.85 7.648 11 10 11s4.373.85 5.863 2.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H1.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46z"></path></svg>';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${AUTHOR_PERSON_GEOMETRY}<path d="M18.5 5.5v4m-2-2h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>`;
 }
 
 function removeAuthorIcon() {
-  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4c-1.105 0-2 .9-2 2s.895 2 2 2 2-.9 2-2-.895-2-2-2zM6 6c0-2.21 1.791-4 4-4s4 1.79 4 4-1.791 4-4 4-4-1.79-4-4zm12.586 3l-2.043-2.04 1.414-1.42L20 7.59l2.043-2.05-1.414-1.42L18.586 9zM3.651 19h12.698c-.337-1.8-1.023-3.21-1.945-4.19C13.318 13.65 11.838 13 10 13s-3.317.65-4.404 1.81c-.922.98-1.608 2.39-1.945 4.19zm.486-5.56C5.627 11.85 7.648 11 10 11s4.373.85 5.863 2.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H1.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46z"></path></svg>';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${AUTHOR_PERSON_GEOMETRY}<path d="m16.5 5.5 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path></svg>`;
 }
 
-function setMenuRowIcon(row, icon) {
+function setMenuRowIcon(row, icon, inverse = false) {
   const svg = document.createRange().createContextualFragment(icon).firstElementChild;
   if (!svg) return;
   row.querySelectorAll("svg").forEach((existing) => existing.remove());
   const iconSlot = document.createElement("span");
   iconSlot.className = "x-clipper-menu-icon";
   iconSlot.setAttribute("aria-hidden", "true");
-  iconSlot.style.cssText = "display: flex !important; width: 24px !important; height: 24px !important; min-width: 24px !important; min-height: 24px !important; margin-right: 12px !important; align-items: center !important; justify-content: center !important; color: currentColor !important;";
+  iconSlot.style.cssText = `display: flex !important; width: 24px !important; height: 24px !important; min-width: 24px !important; min-height: 24px !important; margin-right: 12px !important; align-items: center !important; justify-content: center !important; color: ${inverse ? "#f4212e" : "currentColor"} !important;`;
   svg.style.cssText = "display: block !important; width: 24px !important; height: 24px !important; fill: currentColor !important; color: currentColor !important;";
   iconSlot.append(svg);
   row.prepend(iconSlot);
 }
 
 function readingTrayIcon(removing = false) {
-  const stateMark = removing
-    ? '<path d="M16 8.5h5"></path>'
-    : '<path d="M18.5 6v5M16 8.5h5"></path>';
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="M3.5 6h14l-1.7 12H5.2L3.5 6zM7 3.5h7M6.5 11h2.7l1.15 2h.3l1.15-2h2.7"></path>${stateMark}</g></svg>`;
+  if (removing) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 3h8v2H8V3zM3.5 5.5h17l-2 12.5H5.5l-2-12.5zm3.15 5h3.9l1.1 2h.7l1.1-2h3.9l-.88 5.5H7.53l-.88-5.5z"></path></svg>';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="M4 6h16l-1.8 12H5.8L4 6zM8 3.5h8M7 11h3l1.2 2h1.6l1.2-2h3"></path></g></svg>';
 }
 
 function libraryBookmarkIcon(removing = false) {
-  const stateMark = removing
-    ? '<path d="M16.5 8.5h5"></path>'
-    : '<path d="M19 6v5M16.5 8.5h5"></path>';
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="M5 3.5A2.5 2.5 0 0 1 7.5 1h9A2.5 2.5 0 0 1 19 3.5V23l-7-4.5L5 23V3.5z"></path>${stateMark}</g></svg>`;
+  const path = removing
+    ? "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"
+    : "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z";
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${path}"></path></svg>`;
 }
 
 function copyTextIcon() {
@@ -1012,12 +1012,12 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
   const pageStyle = getComputedStyle(document.body);
   menu.style.backgroundColor = pageStyle.backgroundColor;
   menu.style.color = pageStyle.color;
-  const actionRow = (label, icon, action) => {
+  const actionRow = (label, icon, action, inverse = false) => {
     const row = document.createElement("button");
     row.type = "button";
     row.setAttribute("role", "menuitem");
     row.dataset.xClipperAction = action;
-    setMenuRowIcon(row, icon);
+    setMenuRowIcon(row, icon, inverse);
     const labelSlot = document.createElement("span");
     labelSlot.textContent = label;
     row.append(labelSlot);
@@ -1051,12 +1051,12 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
   if (candidate.contentType === "post") {
     menu.append(actionRow("复制 Markdown", copyTextIcon(), "copy-markdown"));
   } else if (!isArticleSourcePage()) {
-    menu.append(actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list"));
+    menu.append(actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList));
   } else {
     menu.append(
-      actionRow(isInLibrary ? "从素材库移除" : "保存为素材", libraryBookmarkIcon(isInLibrary), "library"),
+      actionRow(isInLibrary ? "从素材库移除" : "保存为素材", libraryBookmarkIcon(isInLibrary), "library", isInLibrary),
       actionRow("预览 / 复制 Markdown", markdownPreviewIcon(), "preview"),
-      actionRow(isAuthorSaved ? "取消收藏作者" : "收藏作者", isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author"),
+      actionRow(isAuthorSaved ? "取消收藏作者" : "收藏作者", isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author", isAuthorSaved),
     );
   }
   const style = createArticleActionsMenuStyle();

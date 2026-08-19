@@ -165,6 +165,7 @@ function normalizedAuthorVerificationType(value) {
 
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
 const CONTENT_SCRIPT_REVISION = "article-first-v3";
+const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 
 function isExpectedTabLifecycleError(error) {
   const message = String(error?.message || error || "").trim();
@@ -267,11 +268,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return respond(mutateStore("removeAuthor", message.handle), "无法取消收藏作者。");
   }
   if (message?.type === "open-markdown-preview") {
-    const preview = previewValue(message.capture, { canSave: Boolean(message.canSave) });
+    if (message.assetId) {
+      const assetId = String(message.assetId);
+      return respond(
+        chrome.tabs.create({ url: chrome.runtime.getURL(`preview.html?mode=library&assetId=${encodeURIComponent(assetId)}`) })
+          .then((tab) => ({ assetId, tabId: tab.id })),
+        "无法打开 Markdown 预览。",
+      );
+    }
+    const previewId = crypto.randomUUID();
+    const previewKey = `${MARKDOWN_PREVIEW_STORAGE_PREFIX}${previewId}`;
+    const preview = previewValue(message.capture, { canSave: true });
     return respond(
-      chrome.storage.session.set({ "library-markdown-preview": preview })
-        .then(() => chrome.tabs.create({ url: chrome.runtime.getURL("preview.html?mode=library") }))
-        .then(() => ({})),
+      chrome.storage.session.set({ [previewKey]: preview })
+        .then(() => chrome.tabs.create({ url: chrome.runtime.getURL(`preview.html?mode=current&previewId=${encodeURIComponent(previewId)}`) }))
+        .then((tab) => ({ previewId, tabId: tab.id })),
       "无法打开 Markdown 预览。",
     );
   }

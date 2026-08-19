@@ -21,7 +21,7 @@ function backgroundContext() {
       action: { onClicked: event },
       tabs: { sendMessage: async () => ({}), get: async (id) => ({ id }), create: async () => ({}) },
       scripting: { executeScript: async () => {} },
-      storage: { local: { get: async () => ({}), set: async () => {} }, session: { set: async () => {} } },
+      storage: { local: { get: async () => ({}), set: async () => {} }, session: { get: async () => ({}), set: async () => {}, remove: async () => {} } },
       sidePanel: { open: async () => {} },
     },
     console: { error() {} },
@@ -184,7 +184,7 @@ test("作者按 handle 去重并保留认证类型", () => {
   assert.equal(store.removeAuthor(second.inbox, "EXAMPLE").inbox.authors.length, 0);
 });
 
-test("Background 只暴露 Article-first 持久化与一次性预览协议", () => {
+test("Background 只暴露 Article-first 持久化与可刷新预览协议", () => {
   const background = source("../background.js");
   for (const type of ["save-reading-article", "remove-reading-article", "save-article-asset", "remove-article-asset", "save-author", "remove-author", "open-markdown-preview"]) {
     assert.match(background, new RegExp(`message\\?\\.type === "${type}"`, "u"));
@@ -192,6 +192,10 @@ test("Background 只暴露 Article-first 持久化与一次性预览协议", () 
   assert.match(background, /CONTENT_SCRIPT_REVISION = "article-first-v3"/u);
   assert.match(background, /files: \["markdown\.js", "content\.js"\]/u);
   assert.doesNotMatch(background, /materialize|preview-job|capture-source|publishedLinks/u);
+  assert.match(background, /MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:"/u);
+  assert.match(background, /preview\.html\?mode=library&assetId=/u);
+  assert.match(background, /preview\.html\?mode=current&previewId=/u);
+  assert.doesNotMatch(background, /library-markdown-preview/u);
   const context = backgroundContext();
   assert.equal(context.previewValue({ authorVerificationType: "blue" }).authorVerificationType, "blue");
   assert.equal(context.previewValue({ authorVerificationType: "gold" }).authorVerificationType, "gold");
@@ -261,6 +265,7 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.equal((navigation.match(/<button\b/gu) || []).length, 3);
   assert.doesNotMatch(navigation, /brand-mark|x-clipper-entry/u);
   assert.match(script, /data-action="asset-preview"/u);
+  assert.match(script, /type: "open-markdown-preview", assetId: asset\.id/u);
   assert.match(script, /usageStatus/u);
   assert.match(script, /data-asset-tag-input/u);
   assert.match(script, /https:\/\/x\.com\/\$\{value\}/u);
@@ -270,8 +275,15 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
 test("Preview 区分当前 Article 与已保存素材", () => {
   const html = source("../preview.html");
   const script = source("../preview.js");
+  const css = source("../preview.css");
   assert.match(html, /id="save"[^>]*hidden/u);
   assert.match(script, /saveButton\.hidden = !value\.canSave/u);
+  assert.match(script, /new URLSearchParams\(location\.search\)/u);
+  assert.match(script, /chrome\.storage\.local\.get\(CONTENT_INBOX_STORAGE_KEY\)/u);
+  assert.match(script, /inbox\.assets\.find\(\(item\) => item\.id === assetId\)/u);
+  assert.match(script, /chrome\.storage\.session\.get\(temporaryPreviewKey\)/u);
+  assert.doesNotMatch(script, /remove\("library-markdown-preview"\)/u);
+  assert.match(css, /\[hidden\] \{ display: none !important; \}/u);
   assert.match(script, /type: "save-article-asset"/u);
   assert.match(script, /contentType: "article"/u);
   assert.match(script, /navigator\.clipboard\.writeText\(preview\.markdown\)/u);
