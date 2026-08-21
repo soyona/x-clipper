@@ -8,6 +8,7 @@ const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
 const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 let preview = null;
 let temporaryPreviewKey = "";
+let previewMode = "";
 
 function text(value) {
   return String(value || "");
@@ -93,23 +94,76 @@ function renderMarkdown(markdown, title = "") {
   return output.join("") || '<p class="empty">这篇 Article 没有可预览的 Markdown 内容。</p>';
 }
 
+function renderPostBody(markdown) {
+  const body = text(markdown).trim();
+  return body ? `<p>${markdownInline(body)}</p>` : '<p class="empty">这条 Post 没有可预览的正文。</p>';
+}
+
+function renderBlocks(blocks, title = "") {
+  const normalizedTitle = text(title).replace(/\s+/gu, " ").trim();
+  const output = normalizedTitle ? [`<h1>${escapeHtml(title)}</h1>`] : [];
+  for (const block of Array.isArray(blocks) ? blocks : []) {
+    if (block.type === "image") {
+      const source = block.imageId ? `data-local-image="${escapeHtml(block.imageId)}"` : `src="${escapeHtml(block.url || "")}"`;
+      output.push(`<figure><img ${source} alt="${escapeHtml(block.altText || "")}" /></figure>`);
+    } else if (block.type === "heading") {
+      const level = Math.min(3, Math.max(1, Number(block.level) || 2));
+      if (level === 1 && text(block.text).replace(/\s+/gu, " ").trim() === normalizedTitle) continue;
+      output.push(`<h${level}>${markdownInline(block.text)}</h${level}>`);
+    } else if (block.type === "blockquote") output.push(`<blockquote>${markdownInline(block.text)}</blockquote>`);
+    else if (block.type === "divider") output.push("<hr>");
+    else if (block.type === "code") output.push(`<div class="preview-code"><pre><code>${escapeHtml(block.text)}</code></pre></div>`);
+    else if (block.text) output.push(`<p>${markdownInline(block.text)}</p>`);
+  }
+  return output.join("") || renderMarkdown(preview?.markdown || "", title);
+}
+
+async function hydrateLocalImages() {
+  const nodes = [...article.querySelectorAll("img[data-local-image]")];
+  await Promise.all(nodes.map(async (node) => {
+    const image = await globalThis.XClipperContentDatabase.readImage(node.dataset.localImage);
+    if (!image?.blob || !node.isConnected) return;
+    const url = URL.createObjectURL(image.blob);
+    node.src = url;
+    node.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+  }));
+}
+
 function renderPreview(value) {
   preview = value;
-  previewTitle.textContent = "Markdown 预览";
-  previewSubtitle.textContent = value.canSave ? "检查后可保存为素材" : "仅在此设备临时展示";
+  previewTitle.textContent = previewMode === "content" ? "本地阅读" : "Markdown 预览";
+  previewSubtitle.textContent = previewMode === "content" ? "已保存于此设备" : value.canSave ? "检查后可保存为素材" : "仅在此设备临时展示";
   const sourceUrl = /^https:\/\/(?:www\.)?(?:x|twitter)\.com\//u.test(value.sourceUrl || "") ? value.sourceUrl : "";
   const sourceLink = sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">打开 X 原文</a>` : "";
+  const isPost = value.contentType === "post";
+  const renderedContent = value.blocks?.length
+    ? renderBlocks(value.blocks, isPost ? "" : value.title)
+    : isPost ? renderPostBody(value.markdown) : renderMarkdown(value.markdown, value.title);
   article.classList.add("is-markdown");
-  article.innerHTML = `<div class="preview-info"><span>Markdown 阅读视图</span>${metadata(value)}${sourceLink}</div>${renderMarkdown(value.markdown, value.title)}`;
+  article.innerHTML = `<div class="preview-info"><span>${isPost ? "Post" : "Article"} 阅读视图</span>${metadata(value)}${sourceLink}</div>${renderedContent}${value.mediaNotice === "video" ? '<p class="preview-media-notice">含视频，仅原文可播放</p>' : ""}`;
   copyButton.disabled = false;
-  saveButton.hidden = !value.canSave;
-  document.title = `${value.title || "Markdown"} · 预览`;
+  saveButton.hidden = !(value.canSave || (previewMode === "content" && value.materialState === "none"));
+  const saveLabel = saveButton.querySelector?.("span");
+  if (saveLabel) saveLabel.textContent = "保存为素材";
+  document.title = `${isPost ? value.authorName || value.authorHandle || "Post" : value.title || "Article"} · 预览`;
+  hydrateLocalImages().catch(() => {});
 }
 
 async function loadPreview() {
   try {
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
+    previewMode = mode || "";
+    if (mode === "content") {
+      const itemId = params.get("itemId") || "";
+      if (!itemId) throw new Error("阅读链接无效，请返回待读列表重新打开。");
+      const item = await globalThis.XClipperContentDatabase.getItem(itemId);
+      if (!item) throw new Error("内容不存在或已被删除，请返回待读列表重新打开。");
+      const openedAt = new Date().toISOString();
+      await chrome.runtime.sendMessage({ type: "update-content-item", itemId, patch: { readState: "read", openedAt } });
+      renderPreview({ ...item, canSave: false });
+      return;
+    }
     if (mode === "library") {
       const assetId = params.get("assetId") || "";
       if (!assetId) throw new Error("预览链接无效，请返回素材库重新打开。");
@@ -152,15 +206,15 @@ copyButton.addEventListener("click", async () => {
 });
 
 saveButton.addEventListener("click", async () => {
-  if (!preview?.canSave) return;
+  if (!preview?.canSave && previewMode !== "content") return;
   saveButton.disabled = true;
   try {
-    const result = await chrome.runtime.sendMessage({
-      type: "save-article-asset",
-      capture: { ...preview, content: preview.markdown, contentType: "article" },
-    });
+    const result = previewMode === "content"
+      ? await chrome.runtime.sendMessage({ type: "update-content-item", itemId: preview.id, patch: { materialState: "unused" } })
+      : await chrome.runtime.sendMessage({ type: "save-article-asset", capture: { ...preview, content: preview.markdown, contentType: "article" } });
     if (result?.error) throw new Error(result.error);
     preview.canSave = false;
+    preview.materialState = previewMode === "content" ? "unused" : preview.materialState;
     saveButton.hidden = true;
     if (temporaryPreviewKey) await chrome.storage.session.set({ [temporaryPreviewKey]: preview });
     status.textContent = "已保存为素材";

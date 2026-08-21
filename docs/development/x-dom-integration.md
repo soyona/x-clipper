@@ -16,29 +16,41 @@
 - `/用户名/status/<id>` 详情页只允许当前 URL status ID 对应的主 Post Card 成为入口 owner。主 Card 必须包含指向该 status ID 的站内链接；回复、引用 Post 与其他 `cellInnerDiv` 不参与详情页入口注入。
 - Article 详情页的作者元数据属于当前主 `article[data-testid="tweet"]`，与正文采集容器分属不同层级。作者栏已验证使用 `data-testid="Tweet-User-Avatar"`、`data-testid="User-Name"` 和 `svg[data-testid="icon-verified"]`；发布时间使用主 Card 内的 `time[datetime]`。蓝色认证 SVG 是 `#1d9bf0` 单色 path，金色组织认证 SVG 含两个 `linearGradient` 和三个填充 path；采集时据此记录 `blue`／`gold`，不存在徽标则记录空字符串。采集头像、name、徽标与发布时间时必须限定在该主 Card，正文仍使用 Article 正文容器；不得以正文容器缺少作者栏为由回退到全局 document，也不得读取回复或推荐 Card。
 
+## 已验证的 Post 快照所有权
+
+以下事实来自用户通过 Chrome DevTools 提供的单 Card `outerHTML`，只用于新增的隔离 Post 快照投影；不得据此修改既有 Article/Post 候选、入口 owner、挂载、展开或 `capturePage()` 解析。
+
+- 包含引用内容的普通 Post 在同一个主 `article[data-testid="tweet"]` 内同时存在两个 `data-testid="tweetText"`。当前作者正文不位于 `role="link"` 祖先内；引用 Post 的 `tweetText` 位于独立的嵌套 `role="link"` 容器内。Post 快照只选择不属于该嵌套引用容器的当前作者正文。
+- 长 Post 展开前存在 `data-testid="tweet-text-show-more-link"`、`role="button"` 和 `Show more` 文案；展开后该控件消失，目标 `tweetText` 从截断文本替换为完整正文。现有 `expandCollapsedContent()` 已覆盖该结构，保持冻结并直接复用。
+- 多图 Post 的正文图片位于 `data-testid="tweetPhoto"`，每张图片的所属链接为 `/作者/status/<当前 status ID>/photo/<序号>`。同 Card 中引用 Post 的图片使用另一个 status ID，头像位于 `data-testid="Tweet-User-Avatar"` 且不属于 `tweetPhoto`。Post 快照只接受图片所属 status ID 与目标 Post ID 完全一致的图片。
+- 未播放视频没有 `<video>` 节点。已验证的视频证据位于 `data-testid="tweetPhoto"` 内，使用 `data-testid="previewInterstitial"`、`aria-label="Embedded video"`、`data-testid="playButton"` 和 `aria-label="Play this video"`；封面来自 `pbs.twimg.com/amplify_video_thumb/`。快照只记录 `mediaNotice: "video"`，不保存视频或视频封面。
+- 当前没有音频 Post 源码证据。首批实现不得新增音频或 Space selector，不得猜测音频 DOM；未知的非图片媒体保持未识别且不下载。
+
+上述新增规则的实现所有者为独立 `post-snapshot.js`。`content.js` 中已经取证的页面识别、候选解析、入口所有权、入口几何、目标展开和通用 Capture 逻辑由 `test/x-dom-freeze.test.js` 机械冻结。
+
 入口的直接视觉结构按同一动作行中的兄弟槽位理解：
 
 ```text
 x-clipper slot | Grok slot（可选） | More wrapper
 ```
 
-## 已验证场景的 Article-first 入口矩阵
+## 已验证场景的统一内容入口矩阵
 
 本矩阵只使用用户此前提供的 DOM 证据，不把已验证事实扩展到新页面。列表页中的 `cellInnerDiv` 只负责虚拟列表定位；入口始终归属于内部 Card。Post 与 Article 可能共享 `/用户名/status/<id>` 路由，必须根据当前主 Card 的内容结构区分，不能只依据 URL 猜测类型。
 
 | 场景 | 页面与内容 | 唯一入口 owner | utility action 锚点 | 插入位置 | 必须排除 |
 |---|---|---|---|---|---|
-| 1 | `/home`、`/i/history`、`/i/history/likes` 列表中的 Article Card | 当前可确认的 Article `article[data-testid="tweet"]` | 同动作行的 `Grok actions`；不存在时以 More wrapper 定位 | utility action 左侧；无 utility action 时在 More 左侧 | 普通 Post、回复、引用、`cellInnerDiv`、其他 Card |
+| 1 | `/home`、`/i/history`、`/i/history/likes` 中的所有列表 Card | 不注入 | — | — | 全部 Post 与 Article Card |
 | 2 | `/用户名/status/<id>` 普通 Post 详情页 | 包含当前 URL status ID 站内链接的主 Post `article[data-testid="tweet"]` | `Grok actions`；不存在时以主 Card 的 More wrapper 定位 | utility action 左侧；无 utility action 时在 More 左侧 | 回复、引用 Post、推荐 Card、其他 status ID |
 | 3 | `/用户名/status/<id>` Article 详情页 | 包含当前 URL status ID 站内链接的主 Article Card | `Summarize` 或 `Grok actions` | 固定为 `x-clipper | Summarize/Grok | More` | 回复、引用内容、相关 Article、仅凭 URL 推断 Article 类型 |
-| 4 | `/用户名` 作者主页 Posts Tab 中可确认的 Article Card | 当前 Article `article[data-testid="tweet"]` | 同动作行的 `Grok actions`；不存在时以 More wrapper 定位 | utility action 左侧；无 utility action 时在 More 左侧 | 普通 Post、`cellInnerDiv`、作者页外壳、相邻 Card |
-| 5 | `/用户名/articles` 作者主页 Articles 列表 Card | 当前 Article `article[data-testid="tweet"]` | 同动作行的 `Grok actions`；不存在时以 More wrapper 定位 | utility action 左侧；无 utility action时在 More 左侧 | `cellInnerDiv`、作者页外壳、相邻 Article Card |
+| 4 | `/用户名` 作者主页 Posts Tab 中的所有列表 Card | 不注入 | — | — | 全部 Post 与 Article Card |
+| 5 | `/用户名/articles` 作者主页 Articles 列表 Card | 不注入 | — | — | 全部 Article Card |
 
-作者 Articles 场景经真实 DOM 验证，其入口挂载结构与矩阵中其他已验证列表 Card 相同；该结论只覆盖矩阵中的已验证场景。Card 内的 `data-testid="article-cover-image"` 只用于将内容识别为 Article，不是入口挂载锚点。列表 Card 只提供“加入待读/从待读移除”，不采集正文。
+作者 Articles 场景的 Card 结构证据继续保留，但产品入口范围已收紧为只支持详情页；所有列表 Card 均不再注入入口。Card 内的 `data-testid="article-cover-image"` 只用于内容识别，不作为入口挂载锚点。
 
 ### 变更授权边界
 
-- 上述场景的 DOM owner、锚点和挂载生命周期均基于用户提供的真实 X DOM 源码，不是猜测或通用实现。Article-first 产品边界只改变是否注入和菜单动作，不授权猜测新的 X 结构。
+- 上述场景的 DOM owner、锚点和挂载生命周期均基于用户提供的真实 X DOM 源码，不是猜测或通用实现。统一内容产品边界只改变已取证 Card 是否注入和菜单动作，不授权猜测新的 X 结构。
 - 未经用户明确授权，不得修改本矩阵中的路由范围、owner、锚点、插入顺序或对应 DOM 实现；“结构相似”“减少重复”“通用化”均不构成授权。
 - 新页面或新 DOM 变体不得自动并入现有场景；必须先取得支持该决策的最小 DOM 证据，再由用户明确授权修改。
 - 只读诊断可以确认现状，但不构成修改代码、测试、规则或本文档的授权。
@@ -66,20 +78,22 @@ x-clipper slot | Grok slot（可选） | More wrapper
 
 1. Content Script 初始化并发布可读取的 revision/阶段诊断。
 2. 若 `main` 尚未挂载，以可取消的短周期任务等待。
-3. `main` 可用后，在矩阵列出的已验证列表场景中只扫描当前可见的 `article[data-testid="tweet"]` Card，不把 `cellInnerDiv` 当作注入根；不得把该结论自动扩展到未取证页面。
-4. 只观察 `main` 中新增节点所属的局部 Card。
+3. `main` 可用后只在详情路由为当前 URL 对应的主 Post 或 Article 生成候选；列表 Card 即使被局部观察器发现也必须返回空候选，不得注入入口。
+4. 只观察 `main` 中新增节点所属的局部 Card，用于 SPA 详情切换、主 Card 出现和无效入口清理；不得把 `cellInnerDiv` 当作注入根，也不得把已验证结论扩展到新页面。
 5. 以 `data-x-clipper-article-actions-slot` 标记扩展拥有的完整槽位，并在释放时连同入口整体删除；旧入口兼容清理也必须删除父槽位。
    - 只有仍与 More wrapper 共享已验证动作行、且 Shadow DOM 中仍含扩展入口的 slot 才可整体删除。
    - 若 slot 已被 X React 移动或复用，禁止删除宿主节点；只清空扩展 Shadow DOM、移除扩展标记和扩展添加的 `margin-left`，避免删除 X 的 Stream 或页面根布局。
 6. 点击入口后，从所属 Card 或详情主 Card 生成内容上下文并直接创建扩展菜单。
-   - 普通 Post 列表不注入；Post 详情只提供“复制 Markdown”，不预览、不持久化。
-   - Article 列表只提供“加入待读/从待读移除”，不采集正文。
-   - Article 详情固定为“保存为素材/从素材库移除”“预览 / 复制 Markdown”“收藏作者/取消收藏作者”。保存与预览只采集当前 URL 对应的权威主 Article，不打开后台临时 X 标签。
+   - 普通 Post 列表不注入入口；Post 详情提供“加入待读/从待读移除”和“复制 Markdown”，快照只读取当前作者当前 Post。
+   - Article 列表不注入入口；用户进入详情页后操作。
+   - Article 详情提供待读、素材、预览/复制与作者动作。保存与预览只采集当前 URL 对应的权威主 Article。
    - Capture 只允许展开目标 root 内的折叠内容；不得以整个文档高度为条件调用 `window.scrollTo()` 加载 Timeline、回复或推荐内容。
    - Article 标题以原文页的 `twitter-article-title`（及兼容标题 testid）为权威来源；采集块中与其完全相同的一级标题只保留一次。`Click to Follow/Subscribe` 属于 X 控件文案，不进入正文。
-7. 新打开或刷新的 X 页面只通过 Manifest `content_scripts` 声明式注入；Service Worker 启动、扩展安装和浏览器启动时不得扫描全部 X Tab 并主动执行脚本。只有用户点击扩展图标时，后台才可对当前 Tab 做显式补救注入。
-8. 再次点击、点击外部、`Escape`、滚动或窗口缩放时关闭菜单。
-9. Content Script dispose 时释放定时器、观察器、样式、菜单和入口节点。
+7. 非详情路由上的残留入口点击必须被拒绝并立即清理；菜单打开后若 SPA 已离开原详情、主 Card 已断开或当前候选 URL 已变化，动作必须静默终止并关闭菜单，不得继续调用 Capture 或记录页面加载错误。
+8. 当前 revision 为 `detail-only-v2`；Background 发现旧 revision 时补注入当前打包脚本，新实例负责释放旧监听器并清理旧列表入口。
+9. 新打开或刷新的 X 页面只通过 Manifest `content_scripts` 声明式注入；Service Worker 启动、扩展安装和浏览器启动时不得扫描全部 X Tab 并主动执行脚本。只有用户点击扩展图标时，后台才可对当前 Tab 做显式补救注入。
+10. 再次点击、点击外部、`Escape`、滚动或窗口缩放时关闭菜单。
+11. Content Script dispose 时释放定时器、观察器、样式、菜单和入口节点。
 
 ## UI 分层诊断
 
@@ -111,7 +125,7 @@ x-clipper slot | Grok slot（可选） | More wrapper
 
 ## 行为验收矩阵
 
-至少覆盖：Home 普通 Post 无入口、列表 Article 的待读入口、作者 Posts/Articles、Post `/status` 的单项复制菜单、Article `/status` 或 `/article` 的三项菜单；验证入口位置、hover/focus、菜单无 More 闪现、动态文案、当前 Card 上下文、重复注入、虚拟列表追加、关闭方式和 Content Script 重载。
+至少覆盖：Home、历史、作者 Posts/Articles 中所有列表 Card 无入口，Post `/status` 的待读与复制菜单，以及 Article `/status` 或 `/article` 菜单；验证入口范围、位置、hover/focus、菜单无 More 闪现、动态文案、当前详情上下文、重复注入、关闭方式和 Content Script 重载。
 
 禁止自动启动 Chrome 或浏览器自动化。若现有证据不足以确认 X DOM、SVG 或计算样式，必须要求用户通过 Chrome DevTools 提供支持当前决策的最小源码或属性片段，禁止猜测。
 

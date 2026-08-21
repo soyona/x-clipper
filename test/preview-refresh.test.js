@@ -20,7 +20,7 @@ function fakeElement({ hidden = false, disabled = false } = {}) {
   };
 }
 
-function previewHarness({ search, local = {}, session = {} }) {
+function previewHarness({ search, local = {}, session = {}, contentItem = null }) {
   const elements = {
     article: fakeElement(),
     status: fakeElement(),
@@ -62,12 +62,59 @@ function previewHarness({ search, local = {}, session = {} }) {
         },
       },
     },
+    XClipperContentDatabase: { getItem: async () => contentItem },
     globalThis: null,
   };
   context.globalThis = context;
   runInNewContext(previewSource, context);
   return { context, elements, local, session, removed };
 }
+
+test("Post 本地阅读器不把正文重复渲染为 Article 标题", async () => {
+  const body = "多花 10-20% 心思在 UI 上，这是 Post 正文。";
+  const harness = previewHarness({
+    search: "?mode=content&itemId=post_2090273732308931035",
+    contentItem: {
+      id: "post_2090273732308931035",
+      contentType: "post",
+      sourceUrl: "https://x.com/LinearUncle/status/2090273732308931035",
+      title: body,
+      authorName: "LinearUncle",
+      authorHandle: "LinearUncle",
+      markdown: body,
+      blocks: [{ type: "paragraph", text: body }],
+      materialState: "none",
+    },
+  });
+
+  await harness.context.loadPreviewForTest();
+
+  assert.equal((harness.elements.article.innerHTML.match(new RegExp(body, "gu")) || []).length, 1);
+  assert.doesNotMatch(harness.elements.article.innerHTML, /<h1>/u);
+  assert.match(harness.elements.article.innerHTML, new RegExp(`<p>${body}</p>`, "u"));
+  assert.equal(harness.context.document.title, "LinearUncle · 预览");
+});
+
+test("Post 无 blocks 的兼容路径仍只按正文渲染", async () => {
+  const body = "#hashtag 不是 Article 标题";
+  const harness = previewHarness({
+    search: "?mode=content&itemId=post_42",
+    contentItem: {
+      id: "post_42",
+      contentType: "post",
+      sourceUrl: "https://x.com/example/status/42",
+      title: body,
+      markdown: body,
+      blocks: [],
+      materialState: "none",
+    },
+  });
+
+  await harness.context.loadPreviewForTest();
+
+  assert.doesNotMatch(harness.elements.article.innerHTML, /<h1>/u);
+  assert.match(harness.elements.article.innerHTML, /<p>#hashtag 不是 Article 标题<\/p>/u);
+});
 
 test("素材库 Preview 刷新时按 assetId 从持久素材重新加载", async () => {
   const asset = {
@@ -86,6 +133,7 @@ test("素材库 Preview 刷新时按 assetId 从持久素材重新加载", async
   await harness.context.loadPreviewForTest();
 
   assert.equal(harness.elements.article.innerHTML, firstRender);
+  assert.match(firstRender, /<h1>Saved Article<\/h1>/u);
   assert.match(firstRender, /Saved Article[\s\S]*Persistent body/u);
   assert.equal(harness.elements.copy.disabled, false);
   assert.equal(harness.elements.save.hidden, true);

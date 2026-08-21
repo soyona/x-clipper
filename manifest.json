@@ -2,14 +2,15 @@
   "manifest_version": 3,
   "name": "X Article Clipper",
   "short_name": "X Clipper",
-  "version": "1.0.0",
-  "description": "Save and organize X Articles locally, then preview or copy clean Markdown.",
-  "permissions": ["storage", "sidePanel", "scripting"],
+  "version": "1.1.0",
+  "description": "Save valuable X Posts and Articles locally for focused reading and creative work.",
+  "permissions": ["storage", "unlimitedStorage", "sidePanel", "scripting"],
   "host_permissions": [
     "https://x.com/*",
     "https://www.x.com/*",
     "https://twitter.com/*",
-    "https://www.twitter.com/*"
+    "https://www.twitter.com/*",
+    "https://pbs.twimg.com/*"
   ],
   "action": {
     "default_title": "Open X Article Clipper",
@@ -40,7 +41,7 @@
         "https://twitter.com/*",
         "https://www.twitter.com/*"
       ],
-      "js": ["markdown.js", "content.js"],
+      "js": ["markdown.js", "post-snapshot.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

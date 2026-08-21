@@ -72,6 +72,8 @@ button:focus-visible, .preview-info a:focus-visible { outline: 3px solid #8ab4f8
 .preview-reader :not(pre) > code { padding: 2px 5px; border-radius: 4px; background: #f1f3f4; font-size: .88em; }
 .preview-reader hr { margin: 36px 0; border: 0; border-top: 1px solid #eff3f4; }
 .preview-reader img { display: block; max-width: 100%; height: auto; margin: 0 auto 28px; border-radius: 12px; }
+.preview-reader figure { margin: 0; }
+.preview-media-notice { padding: 12px 16px; border-radius: 12px; background: #f7f9f9; color: #536471; font-size: 14px; }
 .preview-info { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 32px; color: #536471; font-size: 13px; line-height: 1.5; }
 .preview-info a { color: #1d9bf0; }
 .empty, .status { color: #536471; font-size: 14px; }

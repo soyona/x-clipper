@@ -1,3 +1,5 @@
+if (typeof importScripts === "function") importScripts("content-store.js", "content-db.js");
+
 function normalizedAuthorVerificationType(value) {
   return value === "blue" || value === "gold" ? value : "";
 }
@@ -164,7 +166,7 @@ function normalizedAuthorVerificationType(value) {
 }());
 
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "article-first-v3";
+const CONTENT_SCRIPT_REVISION = "detail-only-v2";
 const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 
 function isExpectedTabLifecycleError(error) {
@@ -195,7 +197,7 @@ async function ensureContentScript(tab) {
   }
   const currentTab = await chrome.tabs.get(tab.id);
   if (!isSupportedXTab(currentTab)) return false;
-  await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, files: ["markdown.js", "content.js"] });
+  await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, files: ["markdown.js", "post-snapshot.js", "content.js"] });
   const ready = await chrome.tabs.sendMessage(currentTab.id, { type: "x-clipper-ready" });
   if (!ready?.ok || ready.revision !== CONTENT_SCRIPT_REVISION) throw new Error("Content script revision mismatch.");
   return true;
@@ -233,6 +235,144 @@ async function mutateStore(method, ...args) {
   return result;
 }
 
+let contentDatabaseReady = null;
+
+function ensureContentDatabase() {
+  if (!contentDatabaseReady) {
+    contentDatabaseReady = chrome.storage.local.get(CONTENT_INBOX_STORAGE_KEY)
+      .then((stored) => globalThis.XClipperContentDatabase.migrateLegacyInbox(stored[CONTENT_INBOX_STORAGE_KEY]));
+  }
+  return contentDatabaseReady;
+}
+
+async function notifyContentStoreChanged() {
+  await chrome.runtime.sendMessage({ type: "content-store-changed" }).catch(() => {});
+}
+
+async function imageDigest(blob) {
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+function persistentImageUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "pbs.twimg.com" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+async function persistCaptureImages(capture) {
+  const blocks = Array.isArray(capture?.blocks) ? capture.blocks.map((block) => ({ ...block })) : [];
+  const imageBlocks = blocks.filter((block) => block.type === "image");
+  const sourceUrls = [...new Set(imageBlocks.map((block) => persistentImageUrl(block.url)).filter(Boolean))];
+  const results = new Array(sourceUrls.length);
+  let nextSourceIndex = 0;
+  const downloadNext = async () => {
+    while (nextSourceIndex < sourceUrls.length) {
+      const index = nextSourceIndex;
+      nextSourceIndex += 1;
+      const sourceUrl = sourceUrls[index];
+      try {
+        const response = await fetch(sourceUrl, { credentials: "omit", referrerPolicy: "no-referrer" });
+        if (!response.ok) throw new Error(`图片下载失败（${response.status}）`);
+        const blob = await response.blob();
+        const id = `image_${await imageDigest(blob)}`;
+        results[index] = { id, blob, sourceUrl, mimeType: blob.type || "application/octet-stream", savedAt: new Date().toISOString() };
+      } catch {
+        results[index] = null;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, sourceUrls.length) }, downloadNext));
+  const imageBySourceUrl = new Map(results.filter(Boolean).map((image) => [image.sourceUrl, image]));
+  const imageIds = new Set();
+  let complete = imageBlocks.every((block) => Boolean(persistentImageUrl(block.url)));
+  for (const block of imageBlocks) {
+    const image = imageBySourceUrl.get(persistentImageUrl(block.url));
+    if (!image) { complete = false; continue; }
+    block.imageId = image.id;
+    imageIds.add(image.id);
+  }
+  const images = [...new Map(results.filter(Boolean).map((image) => [image.id, image])).values()];
+  return { blocks, imageIds: [...imageIds], images, complete };
+}
+
+async function saveCapturedContent(capture) {
+  await ensureContentDatabase();
+  const now = new Date().toISOString();
+  const existing = await globalThis.XClipperContentDatabase.getItemBySourceUrl(capture?.sourceUrl);
+  if (existing) {
+    if (globalThis.XClipperContentStore.canCompletePostSnapshot(existing, capture)) {
+      const persisted = await persistCaptureImages(capture);
+      const completed = await globalThis.XClipperContentDatabase.completeCapturedItem(existing.id, {
+        ...capture,
+        blocks: persisted.blocks,
+        imageIds: persisted.imageIds,
+        markdown: capture.markdown || capture.content || "",
+        previewExcerpt: capture.previewExcerpt || capture.plainText || capture.content || "",
+        snapshotState: persisted.complete ? "complete" : "incomplete",
+      }, { now, images: persisted.images });
+      await notifyContentStoreChanged();
+      return { item: completed.item, existing: true, completed: completed.completed };
+    }
+    const item = existing.readState === "unread"
+      ? existing
+      : await globalThis.XClipperContentDatabase.updateItemState(existing.id, { readState: "unread" }, { now });
+    await notifyContentStoreChanged();
+    return { item, existing: true };
+  }
+  const persisted = await persistCaptureImages(capture);
+  const result = await globalThis.XClipperContentDatabase.addCapturedItem({
+    ...capture,
+    blocks: persisted.blocks,
+    imageIds: persisted.imageIds,
+    markdown: capture.markdown || capture.content || "",
+    previewExcerpt: capture.previewExcerpt || capture.plainText || capture.content || "",
+    snapshotState: persisted.complete ? "complete" : "incomplete",
+  }, { now, images: persisted.images });
+  await notifyContentStoreChanged();
+  return result;
+}
+
+function waitForTabComplete(tabId) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      chrome.tabs.onUpdated.removeListener(listener);
+      callback(value);
+    };
+    const timeout = setTimeout(() => {
+      finish(reject, new Error("原文页面加载超时，请稍后重试。"));
+    }, 30000);
+    const listener = (updatedTabId, changeInfo, tab) => {
+      if (updatedTabId !== tabId || changeInfo.status !== "complete") return;
+      finish(resolve, tab);
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    chrome.tabs.get(tabId)
+      .then((tab) => { if (tab.status === "complete") finish(resolve, tab); })
+      .catch((error) => finish(reject, error));
+  });
+}
+
+async function captureArticleReference(reference) {
+  const tab = await chrome.tabs.create({ url: reference.sourceUrl, active: false });
+  try {
+    const loaded = tab.status === "complete" ? tab : await waitForTabComplete(tab.id);
+    await ensureContentScript(loaded);
+    const capture = await chrome.tabs.sendMessage(tab.id, { type: "capture-x" });
+    if (capture?.error) throw new Error(capture.error);
+    return await saveCapturedContent({ ...capture, ...reference, contentType: "article", sourceUrl: reference.sourceUrl });
+  } finally {
+    await chrome.tabs.remove(tab.id).catch(() => {});
+  }
+}
+
 chrome.action.onClicked.addListener((tab) => {
   if (!tab?.id || !tab.windowId || !chrome.sidePanel?.open) return;
   chrome.sidePanel.open({ windowId: tab.windowId }).catch((error) => reportContentScriptError("Could not open Side Panel.", error));
@@ -248,6 +388,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "save-reading-article") {
     return respond(mutateStore("saveReadingArticle", message.reference, { id: `reading_${crypto.randomUUID()}`, now: now() }), "无法加入待读。");
+  }
+  if (message?.type === "read-content-state") {
+    return respond(ensureContentDatabase().then(() => globalThis.XClipperContentDatabase.readState()).then((state) => ({ state })), "无法读取本地内容。" );
+  }
+  if (message?.type === "save-content-item") {
+    return respond(saveCapturedContent(message.capture), "无法保存内容。" );
+  }
+  if (message?.type === "capture-article-reference") {
+    return respond(captureArticleReference(message.reference), "无法保存 Article。" );
+  }
+  if (message?.type === "update-content-item") {
+    return respond(
+      ensureContentDatabase()
+        .then(() => globalThis.XClipperContentDatabase.updateItemState(message.itemId, message.patch, { now: now() }))
+        .then(async (item) => { await notifyContentStoreChanged(); return { item }; }),
+      "无法更新内容。",
+    );
+  }
+  if (message?.type === "remove-content-item") {
+    return respond(
+      ensureContentDatabase()
+        .then(() => globalThis.XClipperContentDatabase.removeItem(message.itemId))
+        .then(async (result) => { await notifyContentStoreChanged(); return result; }),
+      "无法删除内容。",
+    );
+  }
+  if (message?.type === "save-content-author") {
+    return respond(
+      ensureContentDatabase()
+        .then(() => globalThis.XClipperContentDatabase.saveAuthor(message.author, { now: now() }))
+        .then(async (result) => { await notifyContentStoreChanged(); return result; }),
+      "无法收藏作者。",
+    );
+  }
+  if (message?.type === "remove-content-author") {
+    return respond(
+      ensureContentDatabase()
+        .then(() => globalThis.XClipperContentDatabase.removeAuthor(message.handle))
+        .then(async (result) => { await notifyContentStoreChanged(); return result; }),
+      "无法取消收藏作者。",
+    );
+  }
+  if (message?.type === "open-content-reader") {
+    const itemId = String(message.itemId || "");
+    return respond(
+      chrome.tabs.create({ url: chrome.runtime.getURL(`preview.html?mode=content&itemId=${encodeURIComponent(itemId)}`) })
+        .then((tab) => ({ itemId, tabId: tab.id })),
+      "无法打开阅读器。",
+    );
   }
   if (message?.type === "remove-reading-article") {
     return respond(mutateStore("removeReadingArticle", message.sourceUrl), "无法从待读移除。");

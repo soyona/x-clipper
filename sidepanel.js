@@ -1,11 +1,11 @@
-const STORAGE_KEY = "x-clipper-content-inbox";
 const view = document.querySelector("#view");
 const status = document.querySelector("#status");
 
 const state = {
   page: "readingList",
-  data: { schemaVersion: 1, readingList: [], authors: [], assets: [] },
+  data: { schemaVersion: 2, items: [], readingList: [], authors: [], assets: [] },
   readingQuery: "",
+  readingFilter: "unread",
   assetQuery: "",
   assetFilter: "all",
   assetMenu: null,
@@ -43,16 +43,21 @@ function setStatus(message = "", kind = "") {
 }
 
 async function loadData() {
-  const stored = await chrome.storage.local.get(STORAGE_KEY);
-  const value = stored[STORAGE_KEY];
-  state.data = value?.schemaVersion === 1
-    ? {
-      schemaVersion: 1,
-      readingList: Array.isArray(value.readingList) ? value.readingList : [],
-      authors: Array.isArray(value.authors) ? value.authors : [],
-      assets: Array.isArray(value.assets) ? value.assets : [],
-    }
-    : { schemaVersion: 1, readingList: [], authors: [], assets: [] };
+  const result = await chrome.runtime.sendMessage({ type: "read-content-state" });
+  if (result?.error) throw new Error(result.error);
+  const value = result?.state?.schemaVersion === 2 ? result.state : { schemaVersion: 2, items: [], authors: [] };
+  const items = Array.isArray(value.items) ? value.items : [];
+  state.data = {
+    schemaVersion: 2,
+    items,
+    readingList: items,
+    authors: Array.isArray(value.authors) ? value.authors : [],
+    assets: items.filter((item) => item.materialState !== "none").map((item) => ({
+      ...item,
+      usageStatus: item.materialState === "used" ? "used" : "unused",
+      savedAt: item.capturedAt,
+    })),
+  };
   const target = await chrome.storage.session.get("x-clipper-sidepanel-target");
   if (["readingList", "assets", "authors"].includes(target["x-clipper-sidepanel-target"])) {
     state.page = target["x-clipper-sidepanel-target"];
@@ -132,18 +137,39 @@ function readingItem(item) {
   const authorName = item.authorName || item.authorHandle || "未知作者";
   const profileUrl = authorProfileUrl(item.authorHandle);
   const avatar = item.authorAvatarUrl ? `<img src="${escapeHtml(item.authorAvatarUrl)}" alt="" />` : escapeHtml(avatarLabel(item));
-  const cover = item.coverImageUrl
-    ? `<span class="article-card-media"><img src="${escapeHtml(item.coverImageUrl)}" alt="" /><span class="article-card-badge">𝕏 Article</span></span>`
+  const firstImage = (item.blocks || []).find((block) => block.type === "image");
+  const imageCount = (item.blocks || []).filter((block) => block.type === "image").length;
+  const coverUrl = firstImage?.imageId ? "" : firstImage?.url || item.coverImageUrl;
+  const cover = firstImage || item.coverImageUrl
+    ? `<span class="article-card-media ${item.contentType === "post" ? "post-card-media" : ""}"><img ${firstImage?.imageId ? `data-local-image="${escapeHtml(firstImage.imageId)}"` : `src="${escapeHtml(coverUrl)}"`} alt="" />${item.contentType === "article" ? '<span class="article-card-badge">𝕏 Article</span>' : imageCount > 1 ? `<span class="article-card-badge">共 ${imageCount} 张</span>` : ""}</span>`
     : "";
   const excerpt = item.previewExcerpt ? `<span class="article-card-excerpt">${escapeHtml(item.previewExcerpt)}</span>` : "";
-  return `<article class="article-post" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span></div><a class="article-card" data-action="reading-open" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">${cover}<span class="article-card-body"><strong>${escapeHtml(item.title || "Untitled Article")}</strong>${excerpt}</span></a><footer class="article-engagement"><span class="reading-added-at">加入于 ${escapeHtml(formatDate(item.addedAt))}</span><button class="article-inbox-remove" data-action="reading-remove" data-url="${escapeHtml(item.sourceUrl)}" type="button" aria-label="从待读移除" title="从待读移除">${readingRemoveIcon()}</button></footer></div></article>`;
+  const body = item.contentType === "post"
+    ? `<button class="post-card-copy" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button"><span class="post-card-text">${escapeHtml(item.previewExcerpt || item.markdown || "")}</span>${cover}${item.mediaNotice === "video" ? '<span class="post-media-notice">含视频，仅原文可播放</span>' : ""}</button>`
+    : `<button class="article-card article-card-button" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button">${cover}<span class="article-card-body"><strong>${escapeHtml(item.title || "Untitled Article")}</strong>${excerpt}</span></button>`;
+  return `<article class="article-post ${item.readState === "read" ? "is-read" : ""}" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span></div>${body}<footer class="article-engagement"><a class="reading-added-at" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">打开原文</a><button class="article-inbox-remove" data-action="reading-toggle" data-id="${escapeHtml(item.id)}" data-read-state="${escapeHtml(item.readState)}" type="button" aria-label="${item.readState === "read" ? "标记为未读" : "标记为已读"}" title="${item.readState === "read" ? "标记为未读" : "标记为已读"}">${readingRemoveIcon()}</button></footer></div></article>`;
+}
+
+async function hydrateLocalImages() {
+  const nodes = [...view.querySelectorAll("img[data-local-image]")];
+  await Promise.all(nodes.map(async (node) => {
+    const image = await globalThis.XClipperContentDatabase.readImage(node.dataset.localImage);
+    if (!image?.blob || !node.isConnected) return;
+    const url = URL.createObjectURL(image.blob);
+    node.src = url;
+    node.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+  }));
 }
 
 function renderReadingList() {
   const query = state.readingQuery.trim().toLowerCase();
-  const items = state.data.readingList.filter((item) => !query || `${item.title} ${item.authorName} ${item.authorHandle}`.toLowerCase().includes(query));
-  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">搜索待读</span>${searchIcon()}<input data-reading-search type="search" placeholder="搜索标题、作者或 @handle" value="${escapeHtml(state.readingQuery)}" aria-label="搜索待读"></label></div>`;
-  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : '<p class="empty">还没有待读 Article。请在 X 的 Article Card 菜单中加入待读。</p>'}`;
+  const source = state.data.readingList;
+  const counts = { all: source.length, unread: source.filter((item) => item.readState === "unread").length, read: source.filter((item) => item.readState === "read").length };
+  const items = source.filter((item) => (state.readingFilter === "all" || item.readState === state.readingFilter) && (!query || `${item.title} ${item.previewExcerpt} ${item.authorName} ${item.authorHandle}`.toLowerCase().includes(query)));
+  const tabs = [["unread", "未读"], ["read", "已读"], ["all", "全部"]].map(([key, label]) => `<button class="${state.readingFilter === key ? "is-active" : ""}" data-reading-filter="${key}" type="button">${label}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
+  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">搜索待读</span>${searchIcon()}<input data-reading-search type="search" placeholder="搜索内容、作者或 @handle" value="${escapeHtml(state.readingQuery)}" aria-label="搜索待读"></label><div class="asset-filter-tabs" role="group" aria-label="阅读状态">${tabs}</div></div>`;
+  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : '<p class="empty">这里还没有内容。请在 X 的 Post 或 Article 菜单中加入待读。</p>'}`;
+  hydrateLocalImages().catch(() => {});
 }
 
 function authorItem(author) {
@@ -155,9 +181,62 @@ function authorItem(author) {
 }
 
 function renderAuthors() {
-  view.innerHTML = state.data.authors.length
+  const authors = state.data.authors.length
     ? state.data.authors.map(authorItem).join("")
     : '<p class="empty">还没有收藏作者。阅读优质 Article 时，可以从 X Article Clipper 菜单收藏作者。</p>';
+  view.innerHTML = `${authors}<section class="data-management" aria-labelledby="data-management-title"><div><strong id="data-management-title">数据管理</strong><p>备份与恢复此设备上的正文、图片和状态。</p></div><div class="data-management-actions"><button class="secondary-button" data-action="backup-export" type="button">导出备份</button><button class="secondary-button" data-action="backup-import" type="button">恢复备份</button><input data-backup-file type="file" accept="application/json,.json" hidden></div></section>`;
+}
+
+function blobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
+    reader.addEventListener("error", () => reject(reader.error || new Error("无法读取本地图片。")), { once: true });
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function exportBackup() {
+  const data = await globalThis.XClipperContentDatabase.readBackupData();
+  const images = await Promise.all(data.images.map(async ({ blob, ...image }) => ({
+    ...image,
+    mimeType: image.mimeType || blob.type || "application/octet-stream",
+    data: await blobAsDataUrl(blob),
+  })));
+  const payload = { format: "x-clipper-backup", version: 1, exportedAt: new Date().toISOString(), schemaVersion: 2, items: data.items, authors: data.authors, images };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `x-clipper-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  setStatus(`备份已导出 · ${data.items.length} 条内容`);
+}
+
+function imageFromBackup(value) {
+  if (!value?.id || !/^data:[^;,]+;base64,/u.test(value.data || "")) throw new Error("备份中的图片数据无效。" );
+  const encoded = value.data.slice(value.data.indexOf(",") + 1);
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  const { data, ...metadata } = value;
+  return { ...metadata, blob: new Blob([bytes], { type: value.mimeType || "application/octet-stream" }) };
+}
+
+async function restoreBackup(file) {
+  if (!file || file.size > 1024 * 1024 * 1024) throw new Error("备份文件无效或超过 1 GB。" );
+  const payload = JSON.parse(await file.text());
+  if (payload?.format !== "x-clipper-backup" || payload?.version !== 1 || payload?.schemaVersion !== 2) throw new Error("这不是受支持的 X Clipper 备份。" );
+  const result = await globalThis.XClipperContentDatabase.mergeBackupData({
+    schemaVersion: 2,
+    items: Array.isArray(payload.items) ? payload.items : [],
+    authors: Array.isArray(payload.authors) ? payload.authors : [],
+    images: (Array.isArray(payload.images) ? payload.images : []).map(imageFromBackup),
+  });
+  await chrome.runtime.sendMessage({ type: "content-store-changed" }).catch(() => {});
+  await loadData();
+  render();
+  setStatus(`恢复完成 · 新增 ${result.items} 条内容、${result.images} 张图片`);
 }
 
 function assetItem(asset) {
@@ -207,18 +286,26 @@ async function send(message) {
 }
 
 async function updateAsset(asset, patch) {
-  await send({ type: "save-article-asset", assetId: asset.id, patch });
+  const next = {};
+  if (patch.usageStatus) next.materialState = patch.usageStatus === "used" ? "used" : "unused";
+  if (patch.tags) next.tags = patch.tags;
+  await send({ type: "update-content-item", itemId: asset.id, patch: next });
 }
 
 async function handleAction(action, target) {
-  if (action === "reading-open") return;
-  if (action === "reading-remove") {
-    await send({ type: "remove-reading-article", sourceUrl: target.dataset.url });
-    setStatus("已从待读移除");
+  if (action === "backup-export") { await exportBackup(); return; }
+  if (action === "backup-import") { view.querySelector("[data-backup-file]")?.click(); return; }
+  if (action === "reading-open") {
+    await send({ type: "open-content-reader", itemId: target.dataset.id });
+    return;
+  }
+  if (action === "reading-toggle") {
+    await send({ type: "update-content-item", itemId: target.dataset.id, patch: { readState: target.dataset.readState === "read" ? "unread" : "read" } });
+    setStatus(target.dataset.readState === "read" ? "已标记为未读" : "已标记为已读");
     return;
   }
   if (action === "author-remove") {
-    await send({ type: "remove-author", handle: target.dataset.handle });
+    await send({ type: "remove-content-author", handle: target.dataset.handle });
     setStatus("已取消收藏作者");
     return;
   }
@@ -233,14 +320,14 @@ async function handleAction(action, target) {
   if (action === "asset-dialog-cancel") { state.assetDialog = null; render(); return; }
   if (action === "asset-dialog-confirm") {
     const selected = state.data.assets.find((item) => item.id === target.dataset.id);
-    if (selected) await send({ type: "remove-article-asset", sourceUrl: selected.sourceUrl });
+    if (selected) await send({ type: "update-content-item", itemId: selected.id, patch: { materialState: "none" } });
     state.assetDialog = null;
     setStatus("素材已删除");
     return;
   }
   if (!asset) return;
   if (action === "asset-preview") {
-    await send({ type: "open-markdown-preview", assetId: asset.id });
+    await send({ type: "open-content-reader", itemId: asset.id });
     return;
   }
   if (action === "asset-toggle-used") {
@@ -270,6 +357,8 @@ document.addEventListener("click", async (event) => {
   if (tab) { state.page = tab.dataset.view; state.assetMenu = null; render(); return; }
   const filter = event.target.closest("[data-filter]");
   if (filter) { state.assetFilter = filter.dataset.filter; renderAssets(); return; }
+  const readingFilter = event.target.closest("[data-reading-filter]");
+  if (readingFilter) { state.readingFilter = readingFilter.dataset.readingFilter; renderReadingList(); return; }
   const action = event.target.closest("[data-action]");
   if (!action) {
     if (state.assetMenu && !event.target.closest(".asset-menu")) { state.assetMenu = null; render(); }
@@ -296,6 +385,13 @@ view.addEventListener("compositionstart", (event) => {
   if (event.target.matches("[data-asset-search], [data-reading-search], [data-asset-tag-input]")) event.target.dataset.composing = "true";
 });
 
+view.addEventListener("change", (event) => {
+  if (!event.target.matches("[data-backup-file]")) return;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  restoreBackup(file).catch((error) => setStatus(error.message || "恢复失败", "error"));
+});
+
 view.addEventListener("compositionend", (event) => {
   if (!event.target.matches("[data-asset-search], [data-reading-search], [data-asset-tag-input]")) return;
   event.target.dataset.composing = "false";
@@ -317,14 +413,11 @@ document.addEventListener("keydown", (event) => {
 });
 
 chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type !== "navigate-sidepanel" || !["readingList", "assets", "authors"].includes(message.view)) return;
-  state.page = message.view;
-  render();
-});
-
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "local" || !changes[STORAGE_KEY]) return;
-  loadData().then(render).catch(() => {});
+  if (message?.type === "content-store-changed") { loadData().then(render).catch(() => {}); return; }
+  if (message?.type === "navigate-sidepanel" && ["readingList", "assets", "authors"].includes(message.view)) {
+    state.page = message.view;
+    render();
+  }
 });
 
 loadData().then(render).catch((error) => setStatus(error.message || "无法加载本地数据", "error"));

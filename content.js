@@ -123,7 +123,7 @@ const pendingArticleActionsRoots = new Set();
 const pendingArticleActionsMoreButtons = new Set();
 const runtimeMessageListeners = [];
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "article-first-v3";
+const CONTENT_SCRIPT_REVISION = "detail-only-v2";
 const contentScriptAbortController = new AbortController();
 const contentScriptEventOptions = { signal: contentScriptAbortController.signal };
 const articleMenuDiagnostics = { revision: CONTENT_SCRIPT_REVISION, stage: "initialized", history: [] };
@@ -538,9 +538,22 @@ function showPageToast(message, action = null) {
   window.setTimeout(() => toast.remove(), 3200);
 }
 
-async function extractAndCopyCurrentPage() {
-  const candidate = contentCandidateFromPage();
-  const capture = await capturePage(findRoot(), candidate?.sourceUrl || location.href, candidate, { validateLocation: true });
+async function captureContentCandidate(candidate, root) {
+  if (!candidate) throw new Error("无法识别当前内容。");
+  if (candidate.contentType === "post") {
+    await prepareTargetContent(root);
+    return globalThis.XClipperPostSnapshot.createSnapshot(root, candidate, {
+      paragraphFromElement: paragraphBlock,
+      originalImageUrl: originalMediaUrl,
+      markdownFromBlocks: (blocks) => globalThis.XClipperMarkdown.blocksToMarkdown(blocks, { includeImages: true }),
+    });
+  }
+  return capturePage(root, candidate.sourceUrl || location.href, candidate, { validateLocation: true });
+}
+
+async function extractAndCopyCurrentPage(candidate = null, root = null) {
+  const selected = candidate || contentCandidateFromPage();
+  const capture = await captureContentCandidate(selected, root || findRoot());
   await navigator.clipboard.writeText(capture.content);
   showPageToast("Markdown 已复制");
 }
@@ -556,13 +569,18 @@ async function saveCurrentPageToLibrary(candidate = null, root = null) {
   const article = candidate || contentCandidateFromPage(articleActionsAuthor(root || findRoot(), candidate));
   if (article?.contentType !== "article") throw new Error("只有 Article 可以保存为素材。");
   const capture = await capturePage(root || findRoot(), article.sourceUrl, article, { validateLocation: true });
-  const result = await chrome.runtime.sendMessage({ type: "save-article-asset", capture });
+  const saved = await chrome.runtime.sendMessage({ type: "save-content-item", capture });
+  if (saved?.error) throw new Error(saved.error);
+  const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId: saved.item.id, patch: { materialState: "unused" } });
   if (result?.error) throw new Error(result.error);
   showPageToast("已保存为素材 · ", { label: "查看", view: "assets" });
 }
 
 async function removeCurrentPageFromLibrary(sourceUrl) {
-  const result = await chrome.runtime.sendMessage({ type: "remove-article-asset", sourceUrl });
+  const state = await chrome.runtime.sendMessage({ type: "read-content-state" });
+  const item = state?.state?.items?.find((candidate) => matchesSource(candidate, sourceUrl));
+  if (!item) return;
+  const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId: item.id, patch: { materialState: "none" } });
   if (result?.error) throw new Error(result.error);
   showPageToast("已从素材库移除");
 }
@@ -579,14 +597,32 @@ async function removeReadingArticle(sourceUrl) {
   showPageToast("已从待读移除");
 }
 
+async function addContentForLater(candidate, root) {
+  let result;
+  if (candidate.contentType === "article" && !isArticleSourcePage()) {
+    result = await chrome.runtime.sendMessage({ type: "capture-article-reference", reference: candidate });
+  } else {
+    const capture = await captureContentCandidate(candidate, root || findRoot());
+    result = await chrome.runtime.sendMessage({ type: "save-content-item", capture });
+  }
+  if (result?.error) throw new Error(result.error);
+  showPageToast(result.completed ? "已补全并加入待读 · " : result.existing ? "已在待读中 · " : "已加入待读 · ", { label: "查看", view: "readingList" });
+}
+
+async function removeContentForLater(itemId) {
+  const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId, patch: { readState: "read" } });
+  if (result?.error) throw new Error(result.error);
+  showPageToast("已从待读移除");
+}
+
 async function saveCollectedAuthor(author) {
-  const result = await chrome.runtime.sendMessage({ type: "save-author", author });
+  const result = await chrome.runtime.sendMessage({ type: "save-content-author", author });
   if (result?.error) throw new Error(result.error);
   showPageToast("已收藏作者 · ", { label: "查看", view: "authors" });
 }
 
 async function removeCollectedAuthor(handle) {
-  const result = await chrome.runtime.sendMessage({ type: "remove-author", handle });
+  const result = await chrome.runtime.sendMessage({ type: "remove-content-author", handle });
   if (result?.error) throw new Error(result.error);
   showPageToast("已取消收藏作者");
 }
@@ -676,7 +712,7 @@ function articleActionsRootFromTarget(target) {
 
 function contentCandidateForActionsRoot(root) {
   if (!root?.isConnected) return null;
-  return isArticleSourcePage() ? contentCandidateFromPage() : articleCandidateFromListRoot(root);
+  return isArticleSourcePage() ? contentCandidateFromPage() : null;
 }
 
 function injectArticleActionsEntry(root, targetMoreButton = null) {
@@ -986,15 +1022,16 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
   }
   let stored;
   try {
-    stored = await chrome.storage.local.get(CONTENT_INBOX_STORAGE_KEY);
+    stored = await chrome.runtime.sendMessage({ type: "read-content-state" });
   } catch (error) {
     if (articleMoreMenuPending === entry) articleMoreMenuPending = null;
     throw error;
   }
   if (articleMoreMenuPending !== entry || !entry.isConnected) return;
   articleMoreMenuPending = null;
+  if (stored?.error) throw new Error(stored.error);
   recordArticleMenuDiagnostic("storage-read");
-  const inbox = stored[CONTENT_INBOX_STORAGE_KEY]?.schemaVersion === 1 ? stored[CONTENT_INBOX_STORAGE_KEY] : {};
+  const inbox = stored.state?.schemaVersion === 2 ? stored.state : { items: [], authors: [] };
   const author = discoveredAuthor || {
     handle: candidate.authorHandle || "",
     displayName: candidate.authorName || candidate.authorHandle || "",
@@ -1003,8 +1040,9 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
     description: "",
   };
   const isAuthorSaved = (inbox.authors || []).some((item) => item.handle?.replace(/^@/u, "").toLowerCase() === author.handle?.replace(/^@/u, "").toLowerCase());
-  const isInReadingList = (inbox.readingList || []).some((item) => matchesSource(item, candidate.sourceUrl));
-  const isInLibrary = (inbox.assets || []).some((item) => matchesSource(item, candidate.sourceUrl));
+  const savedItem = (inbox.items || []).find((item) => matchesSource(item, candidate.sourceUrl));
+  const isInReadingList = savedItem?.readState === "unread";
+  const isInLibrary = savedItem?.materialState && savedItem.materialState !== "none";
   const menu = document.createElement("div");
   menu.id = "x-clipper-article-actions-menu";
   menu.setAttribute("role", "menu");
@@ -1022,20 +1060,37 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
     labelSlot.textContent = label;
     row.append(labelSlot);
     const runAction = async () => {
+      const currentCandidate = contentCandidateForActionsRoot(root);
+      if (!isArticleSourcePage() || !root?.isConnected || !matchesSource(currentCandidate, candidate.sourceUrl)) {
+        recordArticleMenuDiagnostic("stale-menu-context", { sourceUrl: candidate.sourceUrl });
+        removeArticleMoreMenu();
+        return;
+      }
+      const pendingLabel = action === "reading-list" && !isInReadingList
+        ? "正在加入待读…"
+        : action === "library" && !isInLibrary
+          ? "正在保存素材…"
+          : "";
+      if (pendingLabel) {
+        labelSlot.textContent = pendingLabel;
+        row.setAttribute("aria-busy", "true");
+        menu.querySelectorAll("[data-x-clipper-action]").forEach((button) => { button.disabled = true; });
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      }
       if (action === "author") {
         if (isAuthorSaved) await removeCollectedAuthor(author.handle);
         else await saveCollectedAuthor(author);
       } else if (action === "preview") {
         await previewCurrentPageMarkdown(candidate, root);
       } else if (action === "copy-markdown") {
-        await extractAndCopyCurrentPage();
+        await extractAndCopyCurrentPage(candidate, root);
       } else if (action === "library") {
         if (isInLibrary) await removeCurrentPageFromLibrary(candidate.sourceUrl);
         else await saveCurrentPageToLibrary(candidate, root);
-      } else if (isInReadingList) {
-        await removeReadingArticle(candidate.sourceUrl);
+      } else if (action === "reading-list" && isInReadingList) {
+        await removeContentForLater(savedItem.id);
       } else {
-        await addReadingArticle(candidate);
+        await addContentForLater(candidate, root);
       }
       removeArticleMoreMenu();
     };
@@ -1049,11 +1104,15 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
     return row;
   };
   if (candidate.contentType === "post") {
-    menu.append(actionRow("复制 Markdown", copyTextIcon(), "copy-markdown"));
+    menu.append(
+      actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
+      actionRow("复制 Markdown", copyTextIcon(), "copy-markdown"),
+    );
   } else if (!isArticleSourcePage()) {
     menu.append(actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList));
   } else {
     menu.append(
+      actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
       actionRow(isInLibrary ? "从素材库移除" : "保存为素材", libraryBookmarkIcon(isInLibrary), "library", isInLibrary),
       actionRow("预览 / 复制 Markdown", markdownPreviewIcon(), "preview"),
       actionRow(isAuthorSaved ? "取消收藏作者" : "收藏作者", isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author", isAuthorSaved),
@@ -1069,6 +1128,12 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
 }
 
 async function openArticleActionsFromEntry(entry, sourceRoot = null) {
+  if (!isArticleSourcePage()) {
+    const slot = entry?.getRootNode?.()?.host;
+    if (slot?.matches?.("[data-x-clipper-article-actions-slot]")) removeOwnedArticleActionsSlotOrNeutralize(slot);
+    recordArticleMenuDiagnostic("list-entry-rejected");
+    return;
+  }
   const root = sourceRoot || articleActionsRootFromTarget(entry);
   if (!root) {
     recordArticleMenuDiagnostic("missing-actions-entry-context", { hasRoot: false });
@@ -1404,6 +1469,15 @@ addRuntimeMessageListener((message, sender, sendResponse) => {
   capturePage()
     .then(sendResponse)
     .catch((error) => sendResponse({ error: error.message || "Failed to read the content." }));
+  return true;
+});
+
+addRuntimeMessageListener((message, sender, sendResponse) => {
+  if (message?.type !== "capture-content-source") return;
+  const candidate = contentCandidateFromPage();
+  captureContentCandidate(candidate, findRoot())
+    .then(sendResponse)
+    .catch((error) => sendResponse({ error: error.message || "无法读取内容。" }));
   return true;
 });
 

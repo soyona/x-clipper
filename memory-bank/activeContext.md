@@ -1,39 +1,24 @@
 # Active Context
 
-更新日期：2026-08-12
+更新日期：2026-08-21
 
 ## 当前状态
 
-- X Article Clipper `1.0.0` 新项目发布基线正在准备；真实 X 页面验收仍待执行。
-- 扩展提供 X/Twitter 当前页面读取、文章原文打开和不含图片的 Markdown 复制；候选集 Card 以 X Bookmarks 中栏为像素级视觉载体，点击后直接打开 X 原文，不在 Side Panel 保存或渲染完整正文。
-- 权限保持最小化：`storage`、`sidePanel`、`scripting` 和四个 X/Twitter HTTPS 主机范围；`scripting` 仅向已打开的 X/Twitter 标签补注入已打包事件脚本，或在用户点击 Action 后注入当前标签，避免扩展重载前已打开的 X 页面缺少交互；脚本仅在用户 hover/focus 原生 Follow 或 Bookmark 按钮时读取对应局部 DOM。主链路不使用存储传递视觉内容，保留旧语义预览兼容页。
-- 1.0.0 包含 Chrome Side Panel：候选集、关注作者、候选去重/状态、素材库搜索与主动保存；数据写入 `chrome.storage.local`，底层键为 `x-clipper-content-inbox`。
-- Side Panel 不再读取或展示当前标签页上下文；加入收件箱与保存 Markdown 均在 X 原文中完成，三项主视图直接显示各自管理内容。
-- 素材库以「为何值得用、当前状态、下一步」组成 X 式紧凑 Card，并与候选集复用同一 X Bookmarks 骨架：`40px` 头像列、单行作者/handle/发布与收录日期、完整宽度约 `2.55:1` 媒体框和 Card 内标题。素材封面在媒体框内使用 `object-fit: contain` 保留全部视觉信息，并可在 X 式遮罩中放大查看；候选元数据在保存时优先继承。直接保存使用同一次用户主动提取的公开元数据。旧素材不回填，缺少封面时显示稳定 Article 占位；搜索覆盖标题、作者、handle、标签与备注。
-- 素材 Card 不显示 Markdown 摘要、展开或收起；完整 Markdown 只能通过底部工具栏的“预览 Markdown”进入一次性阅读页，列表不渲染正文。当前没有创作实体，常驻底部使用诚实的 `未使用` / `已使用` 状态和黑色 X 式“标记为已使用”按钮，不伪造创作关联；其他动作收进 `•••`。标签输入在该浮层内完成，不撑开 Card。“管理发布链接”从 `•••` 打开 X 式居中弹层，可查看、打开、移除、添加或按平台替换链接；校验错误紧邻输入框。发布只接受 HTTPS 小红书、Reddit、微信文章或 B 站链接，并以“已发布至”文字和可跳转的平台图标表达；旧的小红书单链接读取时兼容迁移。
-- 候选卡只提供扩展书签“从候选集中移除”；候选 `•••`、`忽略候选` 和候选卡内“添加至素材库”入口已移除。Home、作者 Posts/Articles 列表和 `/status`、`/article` 原文会在 X 的 `Grok actions` 左侧显示 x-clipper 图标；入口完整克隆 Grok 的原生槽位、按钮内部结构与 SVG class，只替换水滴 path。Content Script 会先等待 `main` 挂载，再建立只处理新增节点所属 Card 的局部观察器，因此入口不依赖鼠标移动；当前脚本 revision 与入口阶段同步写入 `<html>` 的诊断属性。入口自身提供 X 式圆形 hover/焦点反馈；点击后直接创建并锚定 x-clipper 菜单，不再触发原生 More。菜单显示五项动态操作：关注/取消关注、预览/复制 Markdown、复制文本、加入/移出素材库、加入/移出候选集。原生 More 不再包含扩展操作。卡片动作只采集被点击的 Post 或 Article。预览动作由后台写入 `library-markdown-preview` 并打开 `preview.html?mode=library`；失效的旧 Content Script 不再访问 `chrome.storage.local` 或重复打印上下文错误；菜单行使用固定 24px 内联 SVG 图标，复制文本行使用独立图标确保文字与其他扩展行上下对齐。
-- More 菜单的加入/移除候选集、加入/移除素材库和关注/取消关注动作完成后显示可点击 Toast；点击目标会打开 Chrome Side Panel 并切换到候选集、素材库或关注作者页。关注菜单文案收敛为“关注/取消关注”，图标分别复用原生 Follow/Unfollow 图标。
-- Toast 打开 Side Panel 时先调用 `chrome.sidePanel.open({ windowId })` 保留用户手势，再写入目标视图并发送导航消息；取消关注图标兼容 X 的 `Unfollow`、`Following` 两种原生菜单标签。
-- 在 X 原文中悬停或键盘聚焦原生 `Follow @handle` 或 `Following` 按钮，会出现扩展的关注作者工具栏；覆盖 Profile Summary、Follow 列表 UserCell、Article 作者头部和 Profile 头部，不再要求选取作者名称，且状态以扩展关注作者列表为准。未关注时显示蓝色 `Follow` 并按公开 handle 去重写入；已关注时显示 `Following`，hover/focus 变为红色 `unfollow`，点击从同一存储删除。Side Panel 通过存储监听实时同步。
-- “关注作者”页只保留 X Follow UI：使用 X `--twitter-*` token 显示头像、姓名、认证标识、handle、简介与 `Following`；作者信息区直接链接到 `https://x.com/<handle>`，悬停/聚焦关注按钮时变为红色 `unfollow`，点击直接取消关注。旧的手动添加、详情、编辑、启停、扫描和删除入口已移除。
-- 列表页（作者主页 Posts、作者 Articles、Home、Bookmarks 等）的 Article Card Bookmark 和 More 均不再注入扩展悬浮入口；扩展动作只在 More 中提供“打开原文后提取”和“加入候选集/从候选集中移除”。使用该 Card 的规范化 `/status/<id>` 或 `/article/<id>` 导航，不读取列表页正文。原文 More 提供 `Extract and copy` 与“保存到素材库/从素材库移除”；移除后可再次添加，候选和素材库状态独立。
-- 候选集候选的页面身份以规范化的当前详情页 URL 为准：`/status/<id>` 或 Article 的主 URL；不从同一 X 详情页中可见的相关 Article/媒体链接推断身份，且会剥离 `/media/<id>` 子路由。
-- 候选集详情页候选的作者与日期从匹配当前 `/status/<id>` 的 Tweet 根节点读取；作者 handle 同时以当前路径为稳定回退，避免 More 入口因各自局部 DOM 不同而写入不完整卡片元数据。
-- 原文详情页 More 操作写入或移除素材后，已打开的 Side Panel 通过 `chrome.storage.onChanged` 自动刷新素材库；列表页 More 的候选集操作刷新候选集。候选集默认按 `addedAt` 显示今日，可按昨日、本周、上周或本月筛选，并支持标题、作者、handle 与 URL 搜索；同时显示活跃候选总数和按添加日期聚合的趋势图。
-- 修复 Side Panel 在扩展重载后直接获取 Article 的 `Could not establish connection`：仅对 X/Twitter 当前页执行一次刷新并有限重试，最终显示可操作中文错误。
-- 修复扩展 Action 点击无响应：Side Panel 现在在用户点击手势内先打开，Content Script 注入改为并行 best-effort，打开失败时保留候选浮层回退。Action 始终承担 Side Panel 入口，不再按原文 URL 切换为提取入口。
-- X Article 的原生 More Dropdown 追加蓝色 x-clipper 分组：关注/取消关注作者、`Extract and copy`、保存到/移出素材库；列表页 More 使用同一分组提供打开原文后提取与加入/移出候选集。Bookmark hover/focus 不再注入扩展工具栏。Content Script 使用可重复执行的单实例生命周期，后台补注入后必须二次确认 revision；只监听 X 的 `#layers` Portal 识别 Article Dropdown 挂载，菜单分组只观察当前 Dropdown 的直接子节点，在 X React 重绘移除分组时恢复，并在实例替换时断开。
+- X Article Clipper `1.1.0` 是当前发布候选。产品定位为本地优先的 X 稍后阅读与创作素材工具，核心闭环为 `发现 → 加入待读 → 本地精读 → 保存为素材 → 标记已使用`。
+- X 页面入口仅出现在当前 URL 对应的 Post 或 Article 详情主内容；Home、历史、作者 Posts/Articles 等所有列表 Card 均不注入，避免用折叠或列表上下文创建不完整快照。
+- Post 保存当前作者当前 Post 的完整正文与所属图片，不包含引用 Post、回复、评论或线程；视频只记录原文播放提示，视频和音频文件不保存。
+- Post 与 Article 共用 IndexedDB schema v2。正文、图片、阅读状态、素材状态、标签和作者存储在 `x-clipper-content`；旧 `chrome.storage.local` inbox 只作为一次性迁移与回退来源。
+- 同一规范化 URL 只有一条内容记录。重复加入默认不覆盖首次快照；仅当已有 Post 纯文本是新正文的严格前缀时允许补全，并保留标签、素材状态及原生命周期时间。
+- 首次保存图片时，同次采集按源 URL 去重、最多四路并行下载，再按 SHA-256 内容去重，并与内容在同一 IndexedDB 事务中提交。图片失败时保留文本并标记快照不完整。
+- Side Panel 固定为“待读 / 素材库 / 作者”三个一级页面。待读支持未读、已读和全部筛选；素材库支持搜索、标签与使用状态；作者按 handle 去重。
+- 本地阅读器按 `itemId` 从 IndexedDB 重建快照。Article 使用标题与正文层级；Post 只按原始正文结构渲染一次，不把正文重复作为 Article 大标题。
+- 作者页底部提供手动 JSON 备份和合并恢复，包含内容、作者、状态与本地图片；恢复只写入缺失 ID，不覆盖当前记录。
+- Content Script revision 为 `detail-only-v2`。旧列表入口会被拒绝并清理；SPA 离开详情、主 Card 断开或 URL 改变后，已打开菜单会安全关闭，不继续采集。
+- 首次“加入待读”或“保存为素材”时，菜单行先显示进行中状态并禁用重复动作；只有本地提交完成后才显示成功 Toast。
 
-## 当前技术债与风险
+## 当前技术债与发布边界
 
-- X 的 DOM、类名和 Article 渲染结构可能变化，`content.js` 的选择器需要定期以真实页面复核。
-- 自动化测试覆盖 Markdown 与选择器存在性；尚未替代 Chrome 实际加载、剪贴板权限和真实页面兼容性验收。
-- Side Panel 的完整 Chrome 交互（写入候选、保存素材）仍待人工复核；作者 Articles 页面 DOM 识别已完成实测。
-- 左侧候选集、关注作者和素材库导航使用独立的本地未读基线；首次启用只建立基线不提示历史数据，后续加入候选、关注作者或保存素材才出现 X 样式数字角标，用户点击对应导航项才标记为已读。
-- 左侧导航新增 X 风格设置图标；设置页可持久化切换导航位于左侧、右侧或隐藏。隐藏状态提供无文字的布局图标，以恢复到此前的可见侧。
-- 2026-08-10 已在 `https://x.com/AnatoliKopadze/articles` 实测：X 当前列表使用普通 generic 标题节点，已补充 `Article` 标记后下一行标题回退；近 7 天发现 1 条，2026-06-01 至 2026-08-10 发现 5 条。
-- 候选集采用 X Bookmarks Card 结构；用户从 X 原文主动加入时读取当前局部 Card 的可见头像、封面、摘要、认证和互动快照，并保存到 `chrome.storage.local`。旧候选缺少快照时按已有字段降级显示，不伪造数据。
-- 候选卡不再接收 X 主页面的计算样式或布局 token；它只使用 Side Panel 的固定样式，避免主页面与 Side Panel 宽度不同导致布局漂移。
-- Side Panel 候选 Card 是 X Bookmarks 的像素级视觉载体，但不是完整 Article 正文预览：标题点击后直接打开原始 Article；候选卡无 `•••` 菜单，完整 Markdown 仍只通过原文页“保存并复制 Markdown”产生。
-- 扩展 Action 优先打开 Side Panel 的候选集、订阅源和素材库；不支持 Side Panel 时才切换当前 X Articles 页面的候选浏览模式。该模式只隐藏不属于候选集的原生 Article 容器，保留候选卡的 X 原始 DOM、CSS、字体、图片和互动结构；关闭浮层或再次点击 Action 后逐项恢复原始 inline style。
-- X 当前 Article 列表的结构优先使用 `article-cover-image`、其同级文字容器和带 `aria-label` 的互动组；当用户从作者 handle 触发候选操作而封面测试标记缺失时，仅在同一最小祖先中有唯一 Article URL 链接时回退，避免用通用标题或链接父元素误配卡片。
+- X DOM 属于第三方可变依赖。现有选择器、入口 owner、挂载几何和 Capture 路径由冻结测试保护，但仍需用户在真实 Chrome/X 页面人工验收。
+- 自动测试不能证明扩展加载、真实 X 页面兼容性、剪贴板权限、视觉对齐或 Chrome Web Store 审核结果。
+- `capture-article-reference` 作为兼容消息仍保留在源码中，但详情页限定的当前 UI 不发送；后续移除前需同步消息契约与测试。
+- GitHub CLI 的 `soyona` 凭据在本次发布审计中无效；Git 提交与 tag 可独立完成，但 GitHub Release 创建必须先恢复有效认证或使用已连接的 GitHub 发布能力。

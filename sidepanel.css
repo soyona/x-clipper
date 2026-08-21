@@ -97,6 +97,10 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .author-description { margin: 4px 0 0; font-size: 15px; line-height: 20px; }
 .author-remove-button { min-height: 32px; flex: 0 0 auto; padding: 0 14px; border: 1px solid var(--twitter-color-border); border-radius: var(--twitter-radius-pill); background: #fff; color: var(--x-primary); font-size: 14px; font-weight: 700; }
 .author-remove-button:hover { border-color: var(--x-error); background: var(--twitter-color-destructive-hover); color: var(--x-error); }
+.data-management { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding: 16px; border-top: 1px solid var(--x-border); color: var(--x-primary); }
+.data-management strong { font-size: 15px; line-height: 20px; }
+.data-management p { margin: 2px 0 0; color: var(--x-secondary); font-size: 13px; line-height: 16px; }
+.data-management-actions { display: flex; flex: 0 0 auto; gap: 8px; }
 
 .asset-avatar { flex: 0 0 40px; }
 .asset-author { flex-wrap: nowrap; }
@@ -138,6 +142,14 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .secondary-button { border: 1px solid var(--twitter-color-border); background: #fff; color: var(--x-primary); }
 .danger-button { border: 0; background: var(--x-error); color: #fff; }
 .empty { margin: 0; padding: 32px 20px; color: var(--x-secondary); font-size: 15px; line-height: 20px; text-align: center; }
+
+.article-card-button, .post-card-copy { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.post-card-copy { display: grid; gap: 12px; padding-top: 4px; }
+.post-card-text { display: -webkit-box; overflow: hidden; font-size: 15px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.post-card-media { aspect-ratio: auto; border: 1px solid var(--twitter-color-border); border-radius: 16px; }
+.post-card-media img { width: 100%; max-height: 260px; aspect-ratio: 16 / 9; object-fit: cover; }
+.post-media-notice { color: var(--x-secondary); font-size: 13px; line-height: 16px; }
+.article-post.is-read { opacity: .72; }
 
 @media (max-width: 360px) {
   .tabbar { width: 52px; flex-basis: 52px; }
