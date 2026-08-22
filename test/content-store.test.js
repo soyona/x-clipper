@@ -55,6 +55,7 @@ test("重复加入不覆盖首次内容快照", () => {
   assert.equal(duplicate.item.title, "Original Post");
   assert.equal(duplicate.item.markdown, "Original Post");
   assert.equal(duplicate.item.capturedAt, "2026-08-21T10:00:00Z");
+  assert.equal(duplicate.item.readingAddedAt, "2026-08-21T10:00:00Z");
 });
 
 test("Post 截断快照只在新正文严格延续旧正文时补全", () => {
@@ -88,6 +89,7 @@ test("Post 截断快照只在新正文严格延续旧正文时补全", () => {
   assert.equal(completed.item.materialState, "used");
   assert.deepEqual(Array.from(completed.item.tags), ["coding"]);
   assert.equal(completed.item.capturedAt, "2026-08-21T10:00:00Z");
+  assert.equal(completed.item.readingAddedAt, "2026-08-21T11:00:00Z");
   assert.equal(completed.item.firstOpenedAt, "2026-08-21T10:30:00Z");
   assert.equal(completed.item.createdAt, "2026-08-21T10:00:00Z");
   assert.equal(completed.item.updatedAt, "2026-08-21T11:00:00Z");
@@ -110,6 +112,24 @@ test("Post 非前缀变更和 Article 都不能覆盖已有快照", () => {
   })), false);
 });
 
+test("直接补全素材快照不改变待读状态和加入时间", () => {
+  const store = contentStore();
+  const truncated = store.addCapturedItem(store.emptyState(), capture({
+    plainText: "Original",
+    blocks: [{ type: "paragraph", text: "Original" }],
+    markdown: "Original",
+  }), { now: "2026-08-21T10:00:00Z" });
+  const read = store.updateItemState(truncated.state, "post_42", { readState: "read" }, { now: "2026-08-21T10:30:00Z" });
+  const completed = store.completeCapturedItem(read.state, "post_42", capture({
+    plainText: "Original Post",
+    blocks: [{ type: "paragraph", text: "Original Post" }],
+    markdown: "Original Post",
+  }), { now: "2026-08-21T11:00:00Z", joinReading: false });
+
+  assert.equal(completed.item.readState, "read");
+  assert.equal(completed.item.readingAddedAt, "2026-08-21T10:00:00Z");
+});
+
 test("阅读状态与素材状态独立更新", () => {
   const store = contentStore();
   const saved = store.addCapturedItem(store.emptyState(), capture(), { now: "2026-08-21T10:00:00Z" });
@@ -124,8 +144,24 @@ test("阅读状态与素材状态独立更新", () => {
 
   assert.equal(read.item.readState, "read");
   assert.equal(read.item.materialState, "unused");
+  assert.equal(read.item.readingAddedAt, "2026-08-21T10:00:00Z");
+  assert.equal(read.item.materialAddedAt, "2026-08-21T11:00:00Z");
   assert.deepEqual(Array.from(read.item.tags), ["idea", "writing"]);
   assert.equal(read.item.firstOpenedAt, "2026-08-21T12:00:00Z");
+});
+
+test("重新加入只刷新待读加入时间，无关状态不污染集合时间", () => {
+  const store = contentStore();
+  const saved = store.addCapturedItem(store.emptyState(), capture(), { now: "2026-08-21T10:00:00Z" });
+  const material = store.updateItemState(saved.state, "post_42", { materialState: "unused" }, { now: "2026-08-21T11:00:00Z" });
+  const used = store.updateItemState(material.state, "post_42", { materialState: "used", tags: ["idea"] }, { now: "2026-08-21T12:00:00Z" });
+  const read = store.updateItemState(used.state, "post_42", { readState: "read" }, { now: "2026-08-21T13:00:00Z" });
+  const rejoined = store.updateItemState(read.state, "post_42", { readState: "unread", readingAddedAt: "2026-08-21T14:00:00Z" }, { now: "2026-08-21T14:00:00Z" });
+  const removedMaterial = store.updateItemState(rejoined.state, "post_42", { materialState: "none" }, { now: "2026-08-21T14:30:00Z" });
+  const readdedMaterial = store.updateItemState(removedMaterial.state, "post_42", { materialState: "unused" }, { now: "2026-08-21T15:00:00Z" });
+
+  assert.equal(readdedMaterial.item.readingAddedAt, "2026-08-21T14:00:00Z");
+  assert.equal(readdedMaterial.item.materialAddedAt, "2026-08-21T15:00:00Z");
 });
 
 test("v1 待读与素材迁移为同一 ContentItem 模型并保留作者", () => {
@@ -160,10 +196,12 @@ test("v1 待读与素材迁移为同一 ContentItem 模型并保留作者", () =
   assert.equal(reading.readState, "unread");
   assert.equal(reading.materialState, "none");
   assert.equal(reading.snapshotState, "incomplete");
+  assert.equal(reading.readingAddedAt, "2026-08-20T10:00:00Z");
   assert.equal(material.readState, "read");
   assert.equal(material.materialState, "used");
   assert.equal(material.markdown, "# Material\n\nBody");
   assert.equal(material.snapshotState, "incomplete");
+  assert.equal(material.materialAddedAt, "2026-08-19T10:00:00Z");
   assert.equal(migrated.authors[0].handle, "example");
   assert.equal(migrated.authors[0].authorVerificationType, "gold");
 });

@@ -6,8 +6,15 @@ const state = {
   data: { schemaVersion: 2, items: [], readingList: [], authors: [], assets: [] },
   readingQuery: "",
   readingFilter: "unread",
+  readingSort: "added",
+  readingSortMenu: false,
+  readingMenu: null,
+  readingMenuPlacement: "down",
+  readingDialog: null,
   assetQuery: "",
   assetFilter: "all",
+  assetSort: "added",
+  assetSortMenu: false,
   assetMenu: null,
   assetMenuPlacement: "down",
   assetTagEditor: null,
@@ -133,6 +140,15 @@ function menuItemIcon(icon) {
   return `<span class="asset-menu-item-icon" aria-hidden="true">${icon}</span>`;
 }
 
+function sortControl(collection, sortBy, open) {
+  const label = sortBy === "published" ? "发布时间" : "加入时间";
+  const options = [["added", "加入时间"], ["published", "发布时间"]]
+    .map(([key, text]) => `<button class="${sortBy === key ? "is-selected" : ""}" data-action="${collection}-sort-select" data-sort="${key}" type="button" role="menuitemradio" aria-checked="${sortBy === key}">${text}</button>`)
+    .join("");
+  const menu = open ? `<div class="asset-menu sort-menu" role="menu" aria-label="排序方式">${options}</div>` : "";
+  return `<div class="sort-menu-anchor"><button class="sort-trigger" data-action="${collection}-sort-menu" type="button" aria-label="排序方式：${label}" aria-haspopup="menu" aria-expanded="${open}">排序：${label}</button>${menu}</div>`;
+}
+
 function readingItem(item) {
   const authorName = item.authorName || item.authorHandle || "未知作者";
   const profileUrl = authorProfileUrl(item.authorHandle);
@@ -147,7 +163,8 @@ function readingItem(item) {
   const body = item.contentType === "post"
     ? `<button class="post-card-copy" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button"><span class="post-card-text">${escapeHtml(item.previewExcerpt || item.markdown || "")}</span>${cover}${item.mediaNotice === "video" ? '<span class="post-media-notice">含视频，仅原文可播放</span>' : ""}</button>`
     : `<button class="article-card article-card-button" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button">${cover}<span class="article-card-body"><strong>${escapeHtml(item.title || "Untitled Article")}</strong>${excerpt}</span></button>`;
-  return `<article class="article-post ${item.readState === "read" ? "is-read" : ""}" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span></div>${body}<footer class="article-engagement"><a class="reading-added-at" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">打开原文</a><button class="article-inbox-remove" data-action="reading-toggle" data-id="${escapeHtml(item.id)}" data-read-state="${escapeHtml(item.readState)}" type="button" aria-label="${item.readState === "read" ? "标记为未读" : "标记为已读"}" title="${item.readState === "read" ? "标记为未读" : "标记为已读"}">${readingRemoveIcon()}</button></footer></div></article>`;
+  const menu = state.readingMenu === item.id ? `<div class="asset-menu ${state.readingMenuPlacement === "up" ? "is-up" : ""}" role="menu"><button class="is-destructive" data-action="reading-delete" data-id="${escapeHtml(item.id)}" type="button" role="menuitem">${menuItemIcon(deleteIcon())}<span>删除待读内容</span></button></div>` : "";
+  return `<article class="article-post ${item.readState === "read" ? "is-read" : ""}" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="reading-menu" data-id="${escapeHtml(item.id)}" type="button" aria-label="待读内容操作" aria-expanded="${state.readingMenu === item.id}">${moreIcon()}</button>${menu}</div></div>${body}<footer class="article-engagement"><a class="reading-added-at" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">打开原文</a><button class="article-inbox-remove" data-action="reading-toggle" data-id="${escapeHtml(item.id)}" data-read-state="${escapeHtml(item.readState)}" type="button" aria-label="${item.readState === "read" ? "标记为未读" : "标记为已读"}" title="${item.readState === "read" ? "标记为未读" : "标记为已读"}">${readingRemoveIcon()}</button></footer></div></article>`;
 }
 
 async function hydrateLocalImages() {
@@ -165,10 +182,16 @@ function renderReadingList() {
   const query = state.readingQuery.trim().toLowerCase();
   const source = state.data.readingList;
   const counts = { all: source.length, unread: source.filter((item) => item.readState === "unread").length, read: source.filter((item) => item.readState === "read").length };
-  const items = source.filter((item) => (state.readingFilter === "all" || item.readState === state.readingFilter) && (!query || `${item.title} ${item.previewExcerpt} ${item.authorName} ${item.authorHandle}`.toLowerCase().includes(query)));
+  const items = globalThis.XClipperSidePanelSort.sortItems(
+    source.filter((item) => (state.readingFilter === "all" || item.readState === state.readingFilter) && (!query || `${item.title} ${item.previewExcerpt} ${item.authorName} ${item.authorHandle}`.toLowerCase().includes(query))),
+    { collection: "reading", sortBy: state.readingSort },
+  );
   const tabs = [["unread", "未读"], ["read", "已读"], ["all", "全部"]].map(([key, label]) => `<button class="${state.readingFilter === key ? "is-active" : ""}" data-reading-filter="${key}" type="button">${label}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
-  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">搜索待读</span>${searchIcon()}<input data-reading-search type="search" placeholder="搜索内容、作者或 @handle" value="${escapeHtml(state.readingQuery)}" aria-label="搜索待读"></label><div class="asset-filter-tabs" role="group" aria-label="阅读状态">${tabs}</div></div>`;
-  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : '<p class="empty">这里还没有内容。请在 X 的 Post 或 Article 菜单中加入待读。</p>'}`;
+  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">搜索待读</span>${searchIcon()}<input data-reading-search type="search" placeholder="搜索内容、作者或 @handle" value="${escapeHtml(state.readingQuery)}" aria-label="搜索待读"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="阅读状态">${tabs}</div>${sortControl("reading", state.readingSort, state.readingSortMenu)}</div></div>`;
+  const dialogItem = state.data.readingList.find((item) => item.id === state.readingDialog);
+  const dialogDescription = dialogItem?.materialState === "none" ? "删除后无法恢复。" : "此内容也会从素材库删除，且无法恢复。";
+  const dialog = dialogItem ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="reading-dialog-title"><h2 id="reading-dialog-title">删除待读内容？</h2><p>${dialogDescription}</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="reading-dialog-cancel" type="button">取消</button><button class="danger-button" data-action="reading-dialog-confirm" data-id="${escapeHtml(dialogItem.id)}" type="button">删除</button></div></section></div>` : "";
+  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : '<p class="empty">这里还没有内容。请在 X 的 Post 或 Article 菜单中加入待读。</p>'}${dialog}`;
   hydrateLocalImages().catch(() => {});
 }
 
@@ -260,11 +283,14 @@ function renderAssets() {
     unused: state.data.assets.filter((asset) => asset.usageStatus !== "used").length,
     used: state.data.assets.filter((asset) => asset.usageStatus === "used").length,
   };
-  const assets = state.data.assets.filter((asset) => (state.assetFilter === "all" || asset.usageStatus === state.assetFilter) && (!query || `${asset.title} ${asset.authorName} ${asset.authorHandle} ${(asset.tags || []).join(" ")}`.toLowerCase().includes(query)));
+  const assets = globalThis.XClipperSidePanelSort.sortItems(
+    state.data.assets.filter((asset) => (state.assetFilter === "all" || asset.usageStatus === state.assetFilter) && (!query || `${asset.title} ${asset.authorName} ${asset.authorHandle} ${(asset.tags || []).join(" ")}`.toLowerCase().includes(query))),
+    { collection: "material", sortBy: state.assetSort },
+  );
   const tabs = [["all", "全部"], ["unused", "未使用"], ["used", "已使用"]].map(([key, label]) => `<button class="${state.assetFilter === key ? "is-active" : ""}" data-filter="${key}" type="button">${label}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
   const dialogAsset = state.data.assets.find((asset) => asset.id === state.assetDialog);
   const dialog = dialogAsset ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="asset-dialog-title"><h2 id="asset-dialog-title">删除素材？</h2><p>删除后无法恢复。</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="asset-dialog-cancel" type="button">取消</button><button class="danger-button" data-action="asset-dialog-confirm" data-id="${escapeHtml(dialogAsset.id)}" type="button">删除</button></div></section></div>` : "";
-  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">搜索素材</span>${searchIcon()}<input data-asset-search type="search" placeholder="搜索标题、作者、@handle 或标签" value="${escapeHtml(state.assetQuery)}" aria-label="搜索素材"></label><div class="asset-filter-tabs" role="group" aria-label="素材分类">${tabs}</div></div>${assets.length ? assets.map(assetItem).join("") : '<p class="empty">还没有素材。请在 Article 原文页保存为素材。</p>'}${dialog}`;
+  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">搜索素材</span>${searchIcon()}<input data-asset-search type="search" placeholder="搜索标题、作者、@handle 或标签" value="${escapeHtml(state.assetQuery)}" aria-label="搜索素材"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="素材分类">${tabs}</div>${sortControl("asset", state.assetSort, state.assetSortMenu)}</div></div>${assets.length ? assets.map(assetItem).join("") : '<p class="empty">还没有素材。请在 Article 原文页保存为素材。</p>'}${dialog}`;
 }
 
 function render() {
@@ -299,6 +325,39 @@ async function handleAction(action, target) {
     await send({ type: "open-content-reader", itemId: target.dataset.id });
     return;
   }
+  if (action === "reading-sort-menu") {
+    state.readingSortMenu = !state.readingSortMenu;
+    state.readingMenu = null;
+    renderReadingList();
+    return;
+  }
+  if (action === "reading-sort-select") {
+    if (["added", "published"].includes(target.dataset.sort)) state.readingSort = target.dataset.sort;
+    state.readingSortMenu = false;
+    renderReadingList();
+    return;
+  }
+  if (action === "reading-menu") {
+    const opening = state.readingMenu !== target.dataset.id;
+    state.readingMenu = opening ? target.dataset.id : null;
+    state.readingSortMenu = false;
+    state.readingMenuPlacement = opening && target.getBoundingClientRect().bottom + 80 > window.innerHeight ? "up" : "down";
+    render();
+    return;
+  }
+  if (action === "reading-dialog-cancel") { state.readingDialog = null; render(); return; }
+  if (action === "reading-dialog-confirm") {
+    await send({ type: "remove-content-item", itemId: target.dataset.id });
+    state.readingDialog = null;
+    setStatus("待读内容已删除");
+    return;
+  }
+  if (action === "reading-delete") {
+    state.readingDialog = target.dataset.id;
+    state.readingMenu = null;
+    render();
+    return;
+  }
   if (action === "reading-toggle") {
     await send({ type: "update-content-item", itemId: target.dataset.id, patch: { readState: target.dataset.readState === "read" ? "unread" : "read" } });
     setStatus(target.dataset.readState === "read" ? "已标记为未读" : "已标记为已读");
@@ -310,9 +369,22 @@ async function handleAction(action, target) {
     return;
   }
   const asset = state.data.assets.find((item) => item.id === target.dataset.id);
+  if (action === "asset-sort-menu") {
+    state.assetSortMenu = !state.assetSortMenu;
+    state.assetMenu = null;
+    renderAssets();
+    return;
+  }
+  if (action === "asset-sort-select") {
+    if (["added", "published"].includes(target.dataset.sort)) state.assetSort = target.dataset.sort;
+    state.assetSortMenu = false;
+    renderAssets();
+    return;
+  }
   if (action === "asset-menu") {
     const opening = state.assetMenu !== target.dataset.id;
     state.assetMenu = opening ? target.dataset.id : null;
+    state.assetSortMenu = false;
     state.assetMenuPlacement = opening && target.getBoundingClientRect().bottom + 260 > window.innerHeight ? "up" : "down";
     render();
     return;
@@ -354,13 +426,16 @@ async function handleAction(action, target) {
 
 document.addEventListener("click", async (event) => {
   const tab = event.target.closest("[data-view]");
-  if (tab) { state.page = tab.dataset.view; state.assetMenu = null; render(); return; }
+  if (tab) { state.page = tab.dataset.view; state.readingSortMenu = false; state.readingMenu = null; state.assetSortMenu = false; state.assetMenu = null; render(); return; }
   const filter = event.target.closest("[data-filter]");
-  if (filter) { state.assetFilter = filter.dataset.filter; renderAssets(); return; }
+  if (filter) { state.assetFilter = filter.dataset.filter; state.assetSortMenu = false; renderAssets(); return; }
   const readingFilter = event.target.closest("[data-reading-filter]");
-  if (readingFilter) { state.readingFilter = readingFilter.dataset.readingFilter; renderReadingList(); return; }
+  if (readingFilter) { state.readingFilter = readingFilter.dataset.readingFilter; state.readingSortMenu = false; renderReadingList(); return; }
   const action = event.target.closest("[data-action]");
   if (!action) {
+    if (state.readingSortMenu && !event.target.closest(".sort-menu-anchor")) { state.readingSortMenu = false; render(); return; }
+    if (state.assetSortMenu && !event.target.closest(".sort-menu-anchor")) { state.assetSortMenu = false; render(); return; }
+    if (state.readingMenu && !event.target.closest(".asset-menu")) { state.readingMenu = null; render(); return; }
     if (state.assetMenu && !event.target.closest(".asset-menu")) { state.assetMenu = null; render(); }
     return;
   }
@@ -406,8 +481,12 @@ view.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (state.readingSortMenu) state.readingSortMenu = false;
+  if (state.readingDialog) state.readingDialog = null;
+  if (state.readingMenu) state.readingMenu = null;
   if (state.assetDialog) state.assetDialog = null;
   if (state.assetMenu) state.assetMenu = null;
+  if (state.assetSortMenu) state.assetSortMenu = false;
   if (state.assetTagEditor) state.assetTagEditor = null;
   render();
 });

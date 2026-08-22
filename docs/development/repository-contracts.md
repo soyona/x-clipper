@@ -24,7 +24,8 @@
 
 - 同一规范化 URL 只有一个稳定 ID：`post_<statusId>` 或 `article_<articleId>`。
 - 首次快照不可被普通重复加入覆盖；重复加入只恢复 `readState: unread`。Post 的已有纯文本仅在它是新采集纯文本的严格前缀时允许补全，正文与图片在同一 IndexedDB 事务中提交，并保留素材状态、标签及原有生命周期时间；非前缀变化不得覆盖。
-- `readState: unread | read` 与 `materialState: none | unused | used` 独立更新。
+- `readState: unread | read` 与 `materialState: none | unused | used` 独立更新。`readingAddedAt` 只记录首次进入统一内容集合或从 X 页面重新加入待读的时间；Side Panel 内标记未读不得刷新它。`materialAddedAt` 只在素材状态从 `none` 进入 `unused | used` 时刷新；标签、使用状态和阅读操作不得污染两个加入时间。
+- Side Panel 的“加入时间”排序在待读使用 `readingAddedAt`，在素材库使用 `materialAddedAt`，旧数据依次回退到 `capturedAt`、`createdAt`；“发布时间”使用 `publishedAt`，缺失或无效值排在末尾。两种排序均为倒序。
 - 图片从 `pbs.twimg.com` 下载为 Blob：同次采集先按源 URL 去重，最多四路并行下载，再以 SHA-256 内容 ID 去重并与内容在同一 IndexedDB 事务中提交。图片失败时文本仍保存，`snapshotState` 为 `incomplete`。
 - 作者按小写 handle 去重；认证类型仅允许空、blue、gold。
 - `chrome.storage.local` 的 `x-clipper-content-inbox` 仅作为 v1 迁移和回退来源。迁移 marker 为 `legacy-v1-imported`；旧键不删除、不覆盖，迁移幂等。
@@ -45,7 +46,7 @@
 | 消息 | 所有者与结果 |
 |---|---|
 | `read-content-state` | 迁移后读取 schema v2 内容和作者 |
-| `save-content-item` | 固化用户主动采集的文本与图片；重复项仅可按严格前缀规则补全截断的 Post 快照 |
+| `save-content-item` | 固化用户主动采集的文本与图片；`target: reading | material` 区分加入待读和直接保存素材，避免素材动作误刷新待读加入时间；重复项仅可按严格前缀规则补全截断的 Post 快照 |
 | `capture-article-reference` | 保留的兼容协议：可打开一次不激活临时页采集 Article；当前详情页限定 UI 不发送该消息 |
 | `update-content-item` / `remove-content-item` | 更新阅读、素材、标签状态或删除内容 |
 | `save-content-author` / `remove-content-author` | 按不区分大小写的 handle 收藏或取消收藏作者 |

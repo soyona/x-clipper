@@ -180,7 +180,7 @@
     }
   }
 
-  async function completeCapturedItem(itemId, captureValue, { now, images = [] } = {}) {
+  async function completeCapturedItem(itemId, captureValue, { now, images = [], joinReading = true } = {}) {
     const database = await openDatabase();
     try {
       const transaction = database.transaction(["items", "images"], "readwrite");
@@ -191,7 +191,7 @@
         { schemaVersion: 2, items: [existing], authors: [] },
         existing.id,
         captureValue,
-        { now },
+        { now, joinReading },
       );
       if (result.completed) {
         itemStore.put(result.item);

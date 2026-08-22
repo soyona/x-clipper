@@ -270,6 +270,8 @@ test("Background 只用严格前缀规则补全已有 Post 快照", () => {
   assert.match(background, /canCompletePostSnapshot\(existing, capture\)/u);
   assert.match(background, /completeCapturedItem\(existing\.id/u);
   assert.match(background, /existing: true, completed: completed\.completed/u);
+  assert.match(background, /joinReading: message\.target !== "material"/u);
+  assert.match(background, /readingAddedAt: now/u);
 });
 
 test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
@@ -284,6 +286,16 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.match(script, /data-action="asset-preview"/u);
   assert.match(script, /type: "open-content-reader", itemId: asset\.id/u);
   assert.match(script, /data-reading-filter="\$\{key\}"/u);
+  assert.match(script, /sortControl\("reading", state\.readingSort, state\.readingSortMenu\)/u);
+  assert.match(script, /sortControl\("asset", state\.assetSort, state\.assetSortMenu\)/u);
+  assert.match(script, /collection: "reading", sortBy: state\.readingSort/u);
+  assert.match(script, /collection: "material", sortBy: state\.assetSort/u);
+  assert.match(html, /<script src="sidepanel-sort\.js"><\/script>/u);
+  assert.match(css, /\.sort-trigger \{[^}]*border-radius: var\(--twitter-radius-pill\)/u);
+  assert.match(script, /data-action="reading-delete"/u);
+  assert.match(script, /data-action="reading-dialog-confirm"/u);
+  assert.match(script, /type: "remove-content-item", itemId: target\.dataset\.id/u);
+  assert.match(script, /此内容也会从素材库删除，且无法恢复。/u);
   assert.match(css, /-webkit-line-clamp: 4/u);
   assert.match(script, /format: "x-clipper-backup", version: 1/u);
   assert.match(script, /data-action="backup-export"/u);

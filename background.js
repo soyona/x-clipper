@@ -299,7 +299,7 @@ async function persistCaptureImages(capture) {
   return { blocks, imageIds: [...imageIds], images, complete };
 }
 
-async function saveCapturedContent(capture) {
+async function saveCapturedContent(capture, { joinReading = true } = {}) {
   await ensureContentDatabase();
   const now = new Date().toISOString();
   const existing = await globalThis.XClipperContentDatabase.getItemBySourceUrl(capture?.sourceUrl);
@@ -313,13 +313,14 @@ async function saveCapturedContent(capture) {
         markdown: capture.markdown || capture.content || "",
         previewExcerpt: capture.previewExcerpt || capture.plainText || capture.content || "",
         snapshotState: persisted.complete ? "complete" : "incomplete",
-      }, { now, images: persisted.images });
+      }, { now, images: persisted.images, joinReading });
       await notifyContentStoreChanged();
       return { item: completed.item, existing: true, completed: completed.completed };
     }
+    if (!joinReading) return { item: existing, existing: true };
     const item = existing.readState === "unread"
       ? existing
-      : await globalThis.XClipperContentDatabase.updateItemState(existing.id, { readState: "unread" }, { now });
+      : await globalThis.XClipperContentDatabase.updateItemState(existing.id, { readState: "unread", readingAddedAt: now }, { now });
     await notifyContentStoreChanged();
     return { item, existing: true };
   }
@@ -393,7 +394,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return respond(ensureContentDatabase().then(() => globalThis.XClipperContentDatabase.readState()).then((state) => ({ state })), "无法读取本地内容。" );
   }
   if (message?.type === "save-content-item") {
-    return respond(saveCapturedContent(message.capture), "无法保存内容。" );
+    return respond(saveCapturedContent(message.capture, { joinReading: message.target !== "material" }), "无法保存内容。" );
   }
   if (message?.type === "capture-article-reference") {
     return respond(captureArticleReference(message.reference), "无法保存 Article。" );

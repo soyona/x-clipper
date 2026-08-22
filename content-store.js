@@ -74,6 +74,8 @@
       materialState: MATERIAL_STATES.has(value?.materialState) ? value.materialState : "none",
       tags: normalizedTags(value?.tags),
       capturedAt: value?.capturedAt || null,
+      readingAddedAt: value?.readingAddedAt || null,
+      materialAddedAt: value?.materialAddedAt || null,
       firstOpenedAt: value?.firstOpenedAt || null,
       lastOpenedAt: value?.lastOpenedAt || null,
       createdAt: value?.createdAt || null,
@@ -105,6 +107,7 @@
       ...captureValue,
       id: id || captureValue?.id,
       capturedAt: captureValue?.capturedAt || now || null,
+      readingAddedAt: captureValue?.readingAddedAt || now || null,
       createdAt: captureValue?.createdAt || now || null,
       updatedAt: now || captureValue?.updatedAt || null,
     });
@@ -131,7 +134,7 @@
     return Boolean(existingText && captureText.length > existingText.length && captureText.startsWith(existingText));
   }
 
-  function completeCapturedItem(stateValue, itemId, captureValue, { now } = {}) {
+  function completeCapturedItem(stateValue, itemId, captureValue, { now, joinReading = true } = {}) {
     const state = currentState(stateValue);
     const existing = state.items.find((candidate) => candidate.id === itemId);
     if (!existing) throw new Error("内容不存在或已被删除。");
@@ -140,10 +143,12 @@
       ...existing,
       ...captureValue,
       id: existing.id,
-      readState: "unread",
+      readState: joinReading ? "unread" : existing.readState,
       materialState: existing.materialState,
       tags: existing.tags,
       capturedAt: existing.capturedAt,
+      readingAddedAt: joinReading ? now || existing.readingAddedAt : existing.readingAddedAt,
+      materialAddedAt: existing.materialAddedAt,
       firstOpenedAt: existing.firstOpenedAt,
       lastOpenedAt: existing.lastOpenedAt,
       createdAt: existing.createdAt,
@@ -158,7 +163,11 @@
     const item = state.items.find((candidate) => candidate.id === itemId);
     if (!item) throw new Error("内容不存在或已被删除。");
     if (READ_STATES.has(patchValue?.readState)) item.readState = patchValue.readState;
-    if (MATERIAL_STATES.has(patchValue?.materialState)) item.materialState = patchValue.materialState;
+    if (patchValue?.readingAddedAt) item.readingAddedAt = patchValue.readingAddedAt;
+    if (MATERIAL_STATES.has(patchValue?.materialState)) {
+      if (item.materialState === "none" && patchValue.materialState !== "none") item.materialAddedAt = now || item.materialAddedAt;
+      item.materialState = patchValue.materialState;
+    }
     if (Array.isArray(patchValue?.tags)) item.tags = normalizedTags(patchValue.tags);
     if (patchValue?.openedAt) {
       item.firstOpenedAt ||= patchValue.openedAt;
@@ -183,6 +192,7 @@
         readState: "unread",
         materialState: "none",
         capturedAt: null,
+        readingAddedAt: legacy.addedAt || null,
         createdAt: legacy.addedAt || null,
         updatedAt: legacy.addedAt || null,
       });
@@ -190,6 +200,7 @@
     }
 
     for (const legacy of Array.isArray(value.assets) ? value.assets : []) {
+      const existing = bySource.get(normalizedSourceUrl(legacy.sourceUrl));
       const item = normalizedItem({
         ...legacy,
         id: stableItemId({ ...legacy, contentType: "article" }),
@@ -199,6 +210,8 @@
         readState: "read",
         materialState: legacy.usageStatus === "used" ? "used" : "unused",
         capturedAt: legacy.savedAt || null,
+        readingAddedAt: existing?.readingAddedAt || legacy.savedAt || null,
+        materialAddedAt: legacy.savedAt || null,
         createdAt: legacy.savedAt || null,
         updatedAt: legacy.updatedAt || legacy.savedAt || null,
       });

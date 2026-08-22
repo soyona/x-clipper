@@ -569,7 +569,7 @@ async function saveCurrentPageToLibrary(candidate = null, root = null) {
   const article = candidate || contentCandidateFromPage(articleActionsAuthor(root || findRoot(), candidate));
   if (article?.contentType !== "article") throw new Error("只有 Article 可以保存为素材。");
   const capture = await capturePage(root || findRoot(), article.sourceUrl, article, { validateLocation: true });
-  const saved = await chrome.runtime.sendMessage({ type: "save-content-item", capture });
+  const saved = await chrome.runtime.sendMessage({ type: "save-content-item", target: "material", capture });
   if (saved?.error) throw new Error(saved.error);
   const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId: saved.item.id, patch: { materialState: "unused" } });
   if (result?.error) throw new Error(result.error);
@@ -603,7 +603,7 @@ async function addContentForLater(candidate, root) {
     result = await chrome.runtime.sendMessage({ type: "capture-article-reference", reference: candidate });
   } else {
     const capture = await captureContentCandidate(candidate, root || findRoot());
-    result = await chrome.runtime.sendMessage({ type: "save-content-item", capture });
+    result = await chrome.runtime.sendMessage({ type: "save-content-item", target: "reading", capture });
   }
   if (result?.error) throw new Error(result.error);
   showPageToast(result.completed ? "已补全并加入待读 · " : result.existing ? "已在待读中 · " : "已加入待读 · ", { label: "查看", view: "readingList" });
