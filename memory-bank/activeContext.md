@@ -1,10 +1,10 @@
 # Active Context
 
-更新日期：2026-08-21
+更新日期：2026-08-22
 
 ## 当前状态
 
-- X Article Clipper `1.1.0` 是当前发布候选。产品定位为本地优先的 X 稍后阅读与创作素材工具，核心闭环为 `发现 → 加入待读 → 本地精读 → 保存为素材 → 标记已使用`。
+- X Article Clipper `1.1.1` 是当前发布候选。产品定位为本地优先的 X 稍后阅读与创作素材工具，核心闭环为 `发现 → 加入待读 → 本地精读 → 保存为素材 → 标记已使用`。
 - X 页面入口仅出现在当前 URL 对应的 Post 或 Article 详情主内容；Home、历史、作者 Posts/Articles 等所有列表 Card 均不注入，避免用折叠或列表上下文创建不完整快照。
 - Post 保存当前作者当前 Post 的完整正文与所属图片，不包含引用 Post、回复、评论或线程；视频只记录原文播放提示，视频和音频文件不保存。
 - Post 与 Article 共用 IndexedDB schema v2。正文、图片、阅读状态、素材状态、标签和作者存储在 `x-clipper-content`；旧 `chrome.storage.local` inbox 只作为一次性迁移与回退来源。

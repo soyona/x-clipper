@@ -79,12 +79,11 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .verified-badge svg { display: block; width: 100%; height: 100%; fill: currentColor; }
 .article-card { display: block; width: 100%; margin-top: 8px; overflow: hidden; border: 1px solid var(--twitter-color-border); border-radius: 12px; background: #fff; color: var(--x-primary); text-decoration: none; }
 .article-card-media { position: relative; display: block; aspect-ratio: 2.55; overflow: hidden; background: var(--twitter-color-divider); }
-.article-card-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.article-card-media img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .article-card-badge { position: absolute; bottom: 12px; left: 16px; padding: 0 8px; border-radius: 4px; background: rgba(15, 20, 25, .55); color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; }
 .article-card-body { display: block; padding: 12px 16px 14px; }
-.article-card strong, .asset-title { display: block; color: var(--x-primary); font-size: 15px; font-weight: 700; line-height: 20px; text-decoration: none; }
-.article-card-excerpt { display: -webkit-box; margin-top: 4px; overflow: hidden; color: var(--x-primary); font-size: 15px; line-height: 20px; white-space: pre-line; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
-.article-card:hover strong, .asset-title:hover { text-decoration: underline; }
+.article-card-title { display: block; color: var(--x-primary); font-size: 15px; font-weight: 700; line-height: 20px; text-decoration: none; }
+.article-card:hover .article-card-title { text-decoration: underline; }
 .article-engagement { display: flex; min-height: 34px; align-items: center; justify-content: space-between; margin-top: 4px; color: var(--x-secondary); }
 .reading-added-at { font-size: 13px; }
 .article-inbox-remove { display: grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid var(--x-blue); border-radius: var(--twitter-radius-pill); background: #fff; color: var(--x-blue); }
@@ -115,7 +114,6 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .article-more { display: grid; width: 34px; height: 34px; place-items: center; margin: -7px -7px 0 0; padding: 0; border: 0; border-radius: var(--twitter-radius-pill); background: transparent; color: var(--x-secondary); }
 .article-more:hover { background: rgba(29, 155, 240, .1); color: var(--x-blue); }
 .article-more svg { width: 20px; height: 20px; fill: currentColor; }
-.asset-card-media img { object-fit: contain; }
 .asset-card-placeholder { display: grid; place-items: center; color: var(--x-secondary); }
 .asset-card-placeholder svg { width: 32px; height: 32px; fill: currentColor; }
 .asset-tags-row, .asset-tag-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -150,7 +148,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .danger-button { border: 0; background: var(--x-error); color: #fff; }
 .empty { margin: 0; padding: 32px 20px; color: var(--x-secondary); font-size: 15px; line-height: 20px; text-align: center; }
 
-.article-card-button, .post-card-copy { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.article-card:is(button) { padding: 0; font: inherit; text-align: left; cursor: pointer; appearance: none; }
+.post-card-copy { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .post-card-copy { display: grid; gap: 12px; padding-top: 4px; }
 .post-card-text { display: -webkit-box; overflow: hidden; font-size: 15px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .post-card-media { aspect-ratio: auto; border: 1px solid var(--twitter-color-border); border-radius: 16px; }

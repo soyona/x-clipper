@@ -92,7 +92,7 @@ test("Manifest 保持独立运行所需的最小权限", () => {
   const manifest = JSON.parse(source("../manifest.json"));
   assert.equal(manifest.name, "X Article Clipper");
   assert.equal(manifest.short_name, "X Clipper");
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
   assert.equal(manifest.description, "Save valuable X Posts and Articles locally for focused reading and creative work.");
   assert.deepEqual(manifest.permissions, ["storage", "unlimitedStorage", "sidePanel", "scripting"]);
   assert.equal(manifest.permissions.includes("activeTab"), false);
@@ -105,11 +105,11 @@ test("Manifest 保持独立运行所需的最小权限", () => {
   assert.equal(manifest.background.service_worker, "background.js");
 });
 
-test("1.1.0 发布元数据包含仓库和隐私披露", () => {
+test("1.1.1 发布元数据包含仓库和隐私披露", () => {
   const packageMetadata = JSON.parse(source("../package.json"));
   const privacy = source("../PRIVACY.md");
   assert.equal(packageMetadata.name, "x-clipper");
-  assert.equal(packageMetadata.version, "1.1.0");
+  assert.equal(packageMetadata.version, "1.1.1");
   assert.equal(packageMetadata.repository.url, "https://github.com/soyona/x-clipper.git");
   assert.match(privacy, /not affiliated with, endorsed by, or sponsored by X Corp/u);
   assert.match(privacy, /pbs\.twimg\.com[\s\S]*stores them locally/u);
@@ -296,7 +296,15 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.match(script, /data-action="reading-dialog-confirm"/u);
   assert.match(script, /type: "remove-content-item", itemId: target\.dataset\.id/u);
   assert.match(script, /此内容也会从素材库删除，且无法恢复。/u);
-  assert.match(css, /-webkit-line-clamp: 4/u);
+  assert.doesNotMatch(script, /article-card-excerpt/u);
+  assert.match(script, /function renderArticleCard\(item,/u);
+  assert.match(script, /renderArticleCard\(item, \{ action: "reading-open" \}\)/u);
+  assert.match(script, /renderArticleCard\(asset, \{ href: asset\.sourceUrl,/u);
+  assert.doesNotMatch(script, /article-card-button|asset-card-media|asset-card-body/u);
+  assert.match(script, /const coverUrl = item\.coverImageUrl \|\| coverBlock\?\.url \|\| ""/u);
+  assert.match(css, /\.article-card-media img \{[^}]*object-fit: contain/u);
+  assert.match(css, /\.article-card:is\(button\) \{[^}]*appearance: none/u);
+  assert.match(css, /\.post-card-text[^}]*-webkit-line-clamp: 4/u);
   assert.match(script, /format: "x-clipper-backup", version: 1/u);
   assert.match(script, /data-action="backup-export"/u);
   assert.match(script, /data-action="backup-import"/u);
