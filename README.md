@@ -23,7 +23,7 @@ X Article Clipper helps you keep the signal you already spent time finding. Save
 1. [Download the latest installation package](https://github.com/soyona/x-clipper/releases/latest/download/x-article-clipper.zip) and unzip it.
 2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
 3. Select **Load unpacked** and choose the unzipped `x-article-clipper` folder.
-4. Open an X Post or Article detail page and use the X Clipper action next to Grok/Summarize.
+4. Open an X Post or Article detail page and select the <img src="assets/icons/x-clipper-icon-32.png" alt="X Clipper logo" width="18"> **X Clipper** action to the left of Grok/Summarize.
 5. Open the extension's Side Panel to manage Read later, Materials, and Authors.
 
 The extension has no build step and no third-party runtime dependencies.

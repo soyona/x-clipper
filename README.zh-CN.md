@@ -23,7 +23,7 @@ X Article Clipper 帮你保留已经筛选出的精华：主动保存一份本�
 1. [下载最新安装包](https://github.com/soyona/x-clipper/releases/latest/download/x-article-clipper.zip)并解压。
 2. 在 Chrome 打开 `chrome://extensions`，开启“开发者模式”。
 3. 点击“加载已解压的扩展程序”，选择 `x-article-clipper` 文件夹。
-4. 打开 X Post 或 Article 详情页，使用 Grok/Summarize 左侧的 X Clipper 入口。
+4. 打开 X Post 或 Article 详情页，点击 Grok/Summarize 左侧的 <img src="assets/icons/x-clipper-icon-32.png" alt="X Clipper Logo" width="18"> **X Clipper** 入口。
 5. 打开插件 Side Panel，管理待读、素材库和作者。
 
 插件没有构建步骤，也没有第三方运行时依赖。
