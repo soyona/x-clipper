@@ -166,7 +166,7 @@ function normalizedAuthorVerificationType(value) {
 }());
 
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "detail-only-v3";
+const CONTENT_SCRIPT_REVISION = "detail-only-v4";
 const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 
 function isExpectedTabLifecycleError(error) {

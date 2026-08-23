@@ -55,7 +55,7 @@
 | `open-content-reader` | 以 `itemId` 打开 IndexedDB 本地阅读器 |
 | `open-side-panel` | Background 打开 Side Panel，并把目标限制为三个一级页面 |
 
-- 当前 Content Script revision 为 `detail-only-v3`。revision 不匹配时，Background 只在用户点击扩展图标后补注入打包的 `i18n.js`、`markdown.js`、`post-snapshot.js` 与 `content.js`；新实例必须释放旧实例和残留入口。
+- 当前 Content Script revision 为 `detail-only-v4`。revision 不匹配时，Background 只在用户点击扩展图标后补注入打包的 `i18n.js`、`markdown.js`、`post-snapshot.js` 与 `content.js`；新实例必须释放旧实例和残留入口。
 - 变更任何消息名、payload、存储 key 或消费时序时，必须同步生产者、消费者、测试和本文档。
 
 ## 权限与数据安全

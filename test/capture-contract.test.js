@@ -92,7 +92,7 @@ test("Manifest 保持独立运行所需的最小权限", () => {
   const manifest = JSON.parse(source("../manifest.json"));
   assert.equal(manifest.name, "X Article Clipper");
   assert.equal(manifest.short_name, "X Clipper");
-  assert.equal(manifest.version, "1.1.1");
+  assert.equal(manifest.version, "1.1.2");
   assert.equal(manifest.description, "Save valuable X Posts and Articles locally for focused reading and creative work.");
   assert.deepEqual(manifest.permissions, ["storage", "unlimitedStorage", "sidePanel", "scripting"]);
   assert.equal(manifest.permissions.includes("activeTab"), false);
@@ -106,11 +106,11 @@ test("Manifest 保持独立运行所需的最小权限", () => {
   assert.deepEqual(manifest.content_scripts[0].js, ["i18n.js", "markdown.js", "post-snapshot.js", "content.js"]);
 });
 
-test("1.1.1 发布元数据包含仓库和隐私披露", () => {
+test("1.1.2 发布元数据包含仓库和隐私披露", () => {
   const packageMetadata = JSON.parse(source("../package.json"));
   const privacy = source("../PRIVACY.md");
   assert.equal(packageMetadata.name, "x-clipper");
-  assert.equal(packageMetadata.version, "1.1.1");
+  assert.equal(packageMetadata.version, "1.1.2");
   assert.equal(packageMetadata.repository.url, "https://github.com/soyona/x-clipper.git");
   assert.match(privacy, /not affiliated with, endorsed by, or sponsored by X Corp/u);
   assert.match(privacy, /pbs\.twimg\.com[\s\S]*stores them locally/u);
@@ -190,7 +190,7 @@ test("Background 暴露统一内容持久化、图片固化与本地阅读协议
   for (const type of ["read-content-state", "save-content-item", "capture-article-reference", "update-content-item", "remove-content-item", "save-content-author", "remove-content-author", "open-content-reader"]) {
     assert.match(background, new RegExp(`message\\?\\.type === "${type}"`, "u"));
   }
-  assert.match(background, /CONTENT_SCRIPT_REVISION = "detail-only-v3"/u);
+  assert.match(background, /CONTENT_SCRIPT_REVISION = "detail-only-v4"/u);
   assert.match(background, /files: \["i18n\.js", "markdown\.js", "post-snapshot\.js", "content\.js"\]/u);
   assert.match(background, /fetch\(sourceUrl, \{ credentials: "omit", referrerPolicy: "no-referrer" \}\)/u);
   assert.match(background, /new Set\(imageBlocks\.map\(\(block\) => persistentImageUrl\(block\.url\)\)\.filter\(Boolean\)\)/u);
@@ -243,7 +243,7 @@ test("Side Panel 使用 X 原始蓝色与金色认证徽标", () => {
 
 test("Content Script 只在 Post 或 Article 详情页提供入口", () => {
   const content = source("../content.js");
-  assert.match(content, /CONTENT_SCRIPT_REVISION = "detail-only-v3"/u);
+  assert.match(content, /CONTENT_SCRIPT_REVISION = "detail-only-v4"/u);
   assert.match(content, /function contentCandidateForActionsRoot\(root\)/u);
   assert.match(content, /isArticleSourcePage\(\) \? contentCandidateFromPage\(\) : null/u);
   assert.doesNotMatch(content, /isArticleSourcePage\(\) \? contentCandidateFromPage\(\) : articleCandidateFromListRoot\(root\)/u);
@@ -251,7 +251,12 @@ test("Content Script 只在 Post 或 Article 详情页提供入口", () => {
   assert.match(content, /if \(!isArticleSourcePage\(\)\) \{[\s\S]*list-entry-rejected[\s\S]*return;/u);
   assert.match(content, /if \(!isArticleSourcePage\(\) \|\| !root\?\.isConnected \|\| !matchesSource\(currentCandidate, candidate\.sourceUrl\)\)/u);
   assert.match(content, /if \(!cover && articleMarker < 0 && !isArticlesIndexPage\(\)\) return null;/u);
-  assert.match(content, /if \(candidate\.contentType === "post"\) \{\s*menu\.append\([\s\S]*t\("addReading"\)[\s\S]*t\("copyMarkdown"\)/u);
+  const postMenuBranch = /if \(candidate\.contentType === "post"\) \{([\s\S]*?)\n  \} else if/u.exec(content)?.[1] || "";
+  assert.match(postMenuBranch, /t\("addReading"\)/u);
+  assert.match(postMenuBranch, /t\("copyMarkdown"\)/u);
+  assert.match(postMenuBranch, /actionRow\(isAuthorSaved \? t\("removeAuthor"\) : t\("saveAuthor"\), isAuthorSaved \? removeAuthorIcon\(\) : saveAuthorIcon\(\), "author", isAuthorSaved\)/u);
+  assert.ok(postMenuBranch.indexOf('t("addReading")') < postMenuBranch.indexOf('t("copyMarkdown")'));
+  assert.ok(postMenuBranch.indexOf('t("copyMarkdown")') < postMenuBranch.indexOf('t("removeAuthor")'));
   assert.match(content, /else if \(!isArticleSourcePage\(\)\) \{\s*menu\.append\(actionRow\(isInReadingList \? t\("removeReading"\) : t\("addReading"\)/su);
   assert.match(content, /actionRow\(isInLibrary \? t\("removeMaterial"\) : t\("saveMaterial"\)[\s\S]*actionRow\(t\("previewCopyMarkdown"\)[\s\S]*actionRow\(isAuthorSaved \? t\("removeAuthor"\) : t\("saveAuthor"\)/u);
   assert.match(content, /XClipperPostSnapshot\.createSnapshot/u);

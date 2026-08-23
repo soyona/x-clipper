@@ -126,7 +126,7 @@ const pendingArticleActionsRoots = new Set();
 const pendingArticleActionsMoreButtons = new Set();
 const runtimeMessageListeners = [];
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "detail-only-v3";
+const CONTENT_SCRIPT_REVISION = "detail-only-v4";
 const contentScriptAbortController = new AbortController();
 const contentScriptEventOptions = { signal: contentScriptAbortController.signal };
 const articleMenuDiagnostics = { revision: CONTENT_SCRIPT_REVISION, stage: "initialized", history: [] };
@@ -1110,6 +1110,7 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
     menu.append(
       actionRow(isInReadingList ? t("removeReading") : t("addReading"), readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
       actionRow(t("copyMarkdown"), copyTextIcon(), "copy-markdown"),
+      actionRow(isAuthorSaved ? t("removeAuthor") : t("saveAuthor"), isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author", isAuthorSaved),
     );
   } else if (!isArticleSourcePage()) {
     menu.append(actionRow(isInReadingList ? t("removeReading") : t("addReading"), readingTrayIcon(isInReadingList), "reading-list", isInReadingList));
