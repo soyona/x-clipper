@@ -1,3 +1,4 @@
 date,channel,content_or_page_url,impressions,likes,replies,reposts_or_shares,saves,profile_visits,link_clicks,github_unique_visitors,github_unique_cloners,stars_total,release_downloads_total,qualified_feedback_count,install_blocker_count,notes
 2026-08-23,baseline,https://github.com/soyona/x-clipper,,,,,,,,1,9,0,0,0,0,"GitHub traffic is a rolling 14-day window; pre-launch clones include development and verification activity"
 2026-08-23,X,https://x.com/MrzPG1HYXJsaJDm/status/2091528052375470591?s=20,,,,,,,,,,0,0,0,0,"5-post English launch thread published; channel metrics pending"
+2026-08-23,xiaohongshu,https://www.xiaohongshu.com/discovery/item/6a8b025c000000000b027b99,,,,,,,,,,0,0,0,0,"6-image Chinese launch note published; channel metrics pending"
