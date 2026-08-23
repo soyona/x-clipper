@@ -68,6 +68,15 @@
 - 开发中先运行定向验证；相关代码和环境未变化时不重复完整验证，最终完整验证最多保留一次成功结果。
 - 除非用户明确授权，不执行 Chrome 实机验收；静态测试不能表述为真实 X 页面兼容性已通过。
 
+## Git 与 Release 契约
+
+- 面向用户的 GitHub Release 安装包名称固定为 `x-article-clipper.zip`，压缩包根目录固定为 `x-article-clipper/`；活动 README 和安装文档只能使用 `https://github.com/soyona/x-clipper/releases/latest/download/x-article-clipper.zip`，不得绑定具体版本号。
+- Agent 每次执行 `git commit` 前，除任务对应验证外必须运行 `npm run release:check`。普通提交只验证发布契约，不创建 Tag、Release 或安装包。
+- Agent 每次执行 `git tag` 或创建 GitHub Release 前，必须运行 `npm run release:package -- --tag v<manifest-version>`；Tag、`manifest.json` 与 `package.json` 版本必须完全一致，检查或打包失败时不得继续。
+- 每个公开 GitHub Release 必须上传由上述命令生成的 `release/x-article-clipper.zip`。版本号和对应 SHA-256 保留在 Release Notes 中，不进入长期下载文件名。
+- Release 创建或更新后，必须验证该 Release 的固定名称资产、摘要、上传状态，以及 `/releases/latest/download/x-article-clipper.zip` 可以解析到最新正式 Release；不得只验证 Tag 或本地文件。
+- Chrome Web Store 上线前，开发者模式安装与覆盖原目录升级属于过渡路径；不得宣称 GitHub Release 安装具备 Chrome 自动更新能力。
+
 ## 大型 X 页面浏览器验收
 
 - 对 X 等持续更新的大型 SPA，不得把整页 `domSnapshot()` 作为默认读取方式；先明确要验证的单一事实，再使用 URL、标题、视口截图、唯一 locator 状态或有上限的 `evaluate()` 投影取证。

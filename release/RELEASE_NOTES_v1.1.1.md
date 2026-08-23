@@ -17,11 +17,11 @@ This release does not add permissions, analytics, tracking, remote scripts, an X
 
 ## Install for the first time
 
-1. Download `x-article-clipper-v1.1.1.zip` from this release and unzip it.
+1. Download `x-article-clipper.zip` from this release and unzip it.
 2. Open `chrome://extensions` in Chrome.
 3. Enable **Developer mode**.
 4. Select **Load unpacked**.
-5. Choose the unzipped `x-article-clipper-v1.1.1` folder.
+5. Choose the unzipped `x-article-clipper` folder.
 
 ## Upgrade an existing unpacked installation
 
@@ -29,7 +29,7 @@ Your saved content belongs to the installed extension profile, so do not remove 
 
 1. Open the Authors page in X Article Clipper and export a complete JSON backup.
 2. Keep the existing extension folder in the same location.
-3. Replace its runtime files with the contents of the new `x-article-clipper-v1.1.1` folder.
+3. Replace its runtime files with the contents of the new `x-article-clipper` folder.
 4. Open `chrome://extensions` and select **Reload** for X Article Clipper.
 5. Confirm that your Read later, Materials, and Authors data is still available.
 
@@ -49,7 +49,13 @@ If you load the new release from a different folder, Chrome may treat it as a se
 - Manual Chrome acceptance: all 5 release scenarios passed.
 - Package integrity: verified before release preparation.
 
-SHA-256 for `x-article-clipper-v1.1.1.zip`:
+SHA-256 for the recommended stable asset, `x-article-clipper.zip`:
+
+```text
+882c0a16fe06c4a333a15a3baa2eea8eb0f9849398d3fb7e3c1ffff79360f7c6
+```
+
+SHA-256 for the legacy versioned asset, `x-article-clipper-v1.1.1.zip`:
 
 ```text
 52f3b7f7ec28cab5b6a36bc4361f7cab21c9aa19cd534c12b28d34a5f6040874

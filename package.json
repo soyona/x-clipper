@@ -8,6 +8,8 @@
   },
   "type": "module",
   "scripts": {
+    "release:check": "node scripts/release-contract.mjs check",
+    "release:package": "node scripts/release-contract.mjs package",
     "test": "node --test"
   }
 }

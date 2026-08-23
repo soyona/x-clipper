@@ -1,16 +1,32 @@
 # X Article Clipper
 
-**把 X 上值得保存的 Post 和 Article，变成可检索、可复用、保存在本地的个人知识库。**
+**别让 X 收藏夹成为好内容的坟场。把真正值得保留的 Post 和 Article，变成可检索、可复用、保存在本地的个人知识库。**
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-X 是发现 AI 前沿观点、工程经验和创作者洞察的重要信息源。但只有能够再次找回并真正复用的收藏，才会成为知识资产。
+X 是发现 AI 前沿观点、工程经验和创作者洞察的重要信息源。真正困难的往往不是找到好内容，而是在它能够帮助工作时重新找到它。
 
-X Article Clipper 帮你保存已经筛选出的精华：在碎片时间留下完整快照，在合适的时间集中阅读，用标签整理可复用素材，再通过 Markdown 进入研究或创作流程。
+X Article Clipper 帮你保留已经筛选出的精华：主动保存一份本地快照，在合适的时间集中阅读，用标签整理可复用素材，再通过 Markdown 进入研究或创作流程。
 
-> 收藏不等于知识库。能够找回和复用，才是收藏的真正价值。
+![X Article Clipper 从主动保存到本地检索和复用的工作流](assets/marketing/x-clipper-walkthrough.gif)
 
-![X Article Clipper 操作菜单与本地素材库](assets/marketing/screenshots/04-x-action-menu.png)
+[**下载最新版本**](https://github.com/soyona/x-clipper/releases/latest/download/x-article-clipper.zip) · [安装与升级指南](release/INSTALL.md) · [报告问题](https://github.com/soyona/x-clipper/issues/new?template=bug.yml)
+
+## 安装前需要知道
+
+- X Article Clipper 目前需要通过 Chrome 开发者模式手动安装，尚未发布到 Chrome Web Store。
+- 它**不会**批量导入或重新整理已有的 X Bookmarks；采集从 Post 或 Article 详情页开始。
+- 你需要能够在自己的网络环境中正常访问和使用 X；插件不提供 X 账号或网络访问服务。
+
+## 快速开始
+
+1. [下载最新安装包](https://github.com/soyona/x-clipper/releases/latest/download/x-article-clipper.zip)并解压。
+2. 在 Chrome 打开 `chrome://extensions`，开启“开发者模式”。
+3. 点击“加载已解压的扩展程序”，选择 `x-article-clipper` 文件夹。
+4. 打开 X Post 或 Article 详情页，使用 Grok/Summarize 左侧的 X Clipper 入口。
+5. 打开插件 Side Panel，管理待读、素材库和作者。
+
+插件没有构建步骤，也没有第三方运行时依赖。
 
 ## 为什么需要 X Article Clipper
 
@@ -19,8 +35,6 @@ X Article Clipper 帮你保存已经筛选出的精华：在碎片时间留下�
 - **保留可靠的本地快照：**原文修改或删除后，已经保存的正文和图片仍可在本地阅读。
 - **让输入服务于输出：**需要研究、写作或发布时，把有价值的素材转换为 Markdown。
 - **让知识资产属于自己：**正文和图片保存在浏览器本地 IndexedDB，并支持 JSON 备份与恢复。
-
-插件不调用 X API，不需要 API Key 或额外账号，也不包含分析统计、跟踪脚本或开发者运营的服务器。
 
 ## 适合谁
 
@@ -59,32 +73,39 @@ Post 和 Article 共用一个本地内容库。阅读状态与素材状态相互
 
 ![本地阅读器与复制 Markdown 动作](assets/marketing/screenshots/05-local-reader-markdown.png)
 
-## 可以完成什么
+## 从发现到复用
 
-- 从当前 Post 或 Article 详情页主动保存内容。
-- 检索待读与素材库。
-- 按阅读、素材状态筛选，并按加入或发布时间排序。
-- 为素材添加标签，标记已使用或未使用。
-- 在无干扰的本地阅读器中阅读完整快照。
-- 预览并复制 Markdown。
-- 收藏 Article 作者，方便以后继续发现内容。
-- 导出完整本地备份，并合并恢复到另一个浏览器配置。
-- 使用英文或简体中文界面。
+| 你的目标 | 采取的动作 | 最终保留什么 |
+|---|---|---|
+| 稍后集中阅读 | 从当前 Post 或 Article 详情页主动保存 | 可检索的本地快照和独立阅读状态 |
+| 建立素材库 | 把有价值的内容保存为素材并添加标签 | 围绕真实工作整理的可复用上下文 |
+| 把研究转化为输出 | 预览并复制干净的 Markdown | 可进入笔记、写作或发布流程的素材 |
+| 持续关注高质量信息源 | 保存 Article 作者 | 值得再次访问的精选作者列表 |
+| 保护自己的资料库 | 导出 JSON 备份，并在恢复时合并 | 由用户掌控的内容、作者、标签和图片副本 |
 
-## 从源码安装
+界面支持英文和简体中文。
 
-X Article Clipper 目前通过 Chrome 开发者模式手动安装，尚未发布到 Chrome Web Store。
+## 隐私与数据所有权
 
-1. [下载 v1.1.1 安装包](https://github.com/soyona/x-clipper/releases/download/v1.1.1/x-article-clipper-v1.1.1.zip)并解压。
-2. 在 Chrome 打开 `chrome://extensions`。
-3. 开启右上角的“开发者模式”。
-4. 点击“加载已解压的扩展程序”，选择解压后的 `x-article-clipper-v1.1.1` 文件夹。
-5. 打开一个 X Post 或 Article 详情页，使用 Grok/Summarize 左侧的 X Clipper 入口。
-6. 打开插件 Side Panel，管理待读、素材库和作者。
+- 不需要 X API、API Key 或额外账号。
+- 不包含分析统计、跟踪脚本、远程代码或开发者运营的内容服务器。
+- 只有用户在支持的页面主动执行 X Article Clipper 动作时，插件才处理页面内容。
+- 已保存内容默认只存在于当前浏览器配置，除非用户主动导出备份。
+- X Article Clipper 完全开源，并采用 MIT 许可证。
 
-插件没有构建步骤，也没有第三方运行时依赖。
+完整说明请阅读[隐私政策](PRIVACY.zh-CN.md)。X Article Clipper 是独立项目，与 X Corp. 没有关联，也未获得其认可或赞助。
 
-已经安装旧版本的用户，升级前应先导出完整备份，并保留原扩展目录路径。替换文件前请阅读[升级说明](release/INSTALL.md)。
+## 升级已经安装的开发者模式版本
+
+保护本地数据之前，不要删除现有扩展。
+
+1. 在作者页面导出完整 JSON 备份。
+2. 保持现有扩展文件夹的位置不变。
+3. 用新版本安装包中的运行文件替换原文件。
+4. 打开 `chrome://extensions`，点击 X Article Clipper 的“重新加载”。
+5. 确认待读、素材库和作者数据仍然存在。
+
+替换文件前请阅读完整的[安装与升级指南](release/INSTALL.md)。
 
 ## 当前边界
 
@@ -96,12 +117,6 @@ X Article Clipper 优先解决“人工筛选后的精华如何沉淀”，而�
 - 不下载视频和音频文件；已保存内容可以返回 X 播放原媒体。
 - 数据默认只存在于当前浏览器配置，需要跨设备时请手动备份和恢复。
 - X Web 结构可能变化；兼容性问题应提供可复现且不含隐私信息的最小证据。
-
-## 隐私与数据所有权
-
-只有用户在支持的页面主动执行 X Article Clipper 动作时，插件才处理页面内容。已经保存的内容不会上传给开发者或第三方服务。
-
-完整说明请阅读[隐私政策](PRIVACY.zh-CN.md)。X Article Clipper 是独立项目，与 X Corp. 没有关联，也未获得其认可或赞助。
 
 ## 反馈与贡献
 
