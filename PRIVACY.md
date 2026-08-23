@@ -15,7 +15,7 @@ The extension processes content only when the user invokes an X Article Clipper 
 - user-created tags, local reading status, and local usage status;
 - publicly visible images belonging to the selected Post or Article.
 
-Saved Post and Article snapshots, authors, and downloaded images are stored in the extension's local IndexedDB. The previous `chrome.storage.local` inbox is retained only as a rollback source after one-time migration. One-time Markdown previews and Side Panel navigation targets remain in `chrome.storage.session`.
+Saved Post and Article snapshots, authors, and downloaded images are stored in the extension's local IndexedDB. The previous `chrome.storage.local` inbox is retained only as a rollback source after one-time migration, and the user's interface language is stored as a local preference. One-time Markdown previews and Side Panel navigation targets remain in `chrome.storage.session`.
 
 When the user chooses “Export backup,” the extension creates a local JSON file containing the saved snapshots, authors, states, and images. The file is not uploaded by the extension. “Restore backup” reads only the file the user explicitly selects and merges missing records into local IndexedDB.
 
@@ -29,7 +29,7 @@ The extension does not transmit saved content or metadata to the developer or to
 
 ## Permissions
 
-- `storage`: stores migration metadata and one-time preview state locally.
+- `storage`: stores migration metadata, the interface language preference, and one-time preview state locally.
 - `unlimitedStorage`: allows user-selected text and images to remain reliably available as the local library grows.
 - `sidePanel`: provides the extension's primary reading, material, and author workspace.
 - `scripting`: restores packaged extension scripts on the current supported X tab after an extension update or other lifecycle interruption.

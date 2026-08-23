@@ -39,6 +39,8 @@
 | `x-clipper-markdown-preview:<previewId>` | 当前未保存 Article 的 Markdown 阅读页 | 浏览器会话内按唯一 `previewId` 保留，刷新可重复读取；预览页关闭按钮会删除当前 key |
 | `x-clipper-sidepanel-target` | 打开 Side Panel 后的一次性目标视图 | 只允许 `readingList`、`assets`、`authors`，读取后立即删除 |
 
+`chrome.storage.local` 的 `x-clipper-locale` 仅保存用户界面语言，允许 `en`、`zh-CN`；它不改变内容 schema、正文或备份格式。
+
 本地阅读器 URL 使用 `itemId`，每次从 IndexedDB 重建正文和图片。Article 使用独立标题与正文，Post 不把正文提升为 Article 标题，也不重复渲染。旧版当前 Article Preview 继续使用唯一 session key，避免刷新或多个预览互相覆盖。
 
 ## 消息边界
@@ -53,7 +55,7 @@
 | `open-content-reader` | 以 `itemId` 打开 IndexedDB 本地阅读器 |
 | `open-side-panel` | Background 打开 Side Panel，并把目标限制为三个一级页面 |
 
-- 当前 Content Script revision 为 `detail-only-v2`。revision 不匹配时，Background 只在用户点击扩展图标后补注入打包的 `markdown.js`、`post-snapshot.js` 与 `content.js`；新实例必须释放旧实例和残留入口。
+- 当前 Content Script revision 为 `detail-only-v3`。revision 不匹配时，Background 只在用户点击扩展图标后补注入打包的 `i18n.js`、`markdown.js`、`post-snapshot.js` 与 `content.js`；新实例必须释放旧实例和残留入口。
 - 变更任何消息名、payload、存储 key 或消费时序时，必须同步生产者、消费者、测试和本文档。
 
 ## 权限与数据安全

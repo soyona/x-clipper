@@ -41,7 +41,7 @@
         "https://twitter.com/*",
         "https://www.twitter.com/*"
       ],
-      "js": ["markdown.js", "post-snapshot.js", "content.js"],
+      "js": ["i18n.js", "markdown.js", "post-snapshot.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

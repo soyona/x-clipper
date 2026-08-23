@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs><radialGradient id="g"><stop stop-color="#1d9bf0" stop-opacity=".32"/><stop offset="1" stop-color="#1d9bf0" stop-opacity="0"/></radialGradient></defs>
+  <rect width="1600" height="900" fill="#000"/><circle cx="1470" cy="20" r="900" fill="url(#g)"/>
+  <text x="80" y="150" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="66" font-weight="800" letter-spacing="-2">Your library stays yours.</text>
+  <text x="82" y="206" fill="#8b98a5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="27">Local-first by design—not a privacy promise added later.</text>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+    <rect x="80" y="292" width="1440" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="134" cy="348" r="13" fill="#1d9bf0"/><text x="174" y="360" fill="#e7e9ea" font-size="32" font-weight="650">Saved text and images stay in your browser's local storage.</text>
+    <rect x="80" y="428" width="1440" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="134" cy="484" r="13" fill="#1d9bf0"/><text x="174" y="496" fill="#e7e9ea" font-size="32" font-weight="650">No X API, analytics, tracking, or developer-operated content server.</text>
+    <rect x="80" y="564" width="1440" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="134" cy="620" r="13" fill="#1d9bf0"/><text x="174" y="632" fill="#e7e9ea" font-size="32" font-weight="650">Export a complete backup and restore it when you choose.</text>
+  </g>
+  <text x="82" y="754" fill="#8b98a5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="24">Honest boundary: existing X Bookmarks are not imported in bulk. Capture starts from a detail page.</text>
+  <text x="80" y="842" fill="#71767b" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif" font-size="22">Open source under MIT · github.com/soyona/x-clipper</text>
+</svg>

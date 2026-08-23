@@ -1,4 +1,4 @@
-if (typeof importScripts === "function") importScripts("content-store.js", "content-db.js");
+if (typeof importScripts === "function") importScripts("i18n.js", "content-store.js", "content-db.js");
 
 function normalizedAuthorVerificationType(value) {
   return value === "blue" || value === "gold" ? value : "";
@@ -166,7 +166,7 @@ function normalizedAuthorVerificationType(value) {
 }());
 
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "detail-only-v2";
+const CONTENT_SCRIPT_REVISION = "detail-only-v3";
 const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 
 function isExpectedTabLifecycleError(error) {
@@ -197,7 +197,7 @@ async function ensureContentScript(tab) {
   }
   const currentTab = await chrome.tabs.get(tab.id);
   if (!isSupportedXTab(currentTab)) return false;
-  await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, files: ["markdown.js", "post-snapshot.js", "content.js"] });
+  await chrome.scripting.executeScript({ target: { tabId: currentTab.id }, files: ["i18n.js", "markdown.js", "post-snapshot.js", "content.js"] });
   const ready = await chrome.tabs.sendMessage(currentTab.id, { type: "x-clipper-ready" });
   if (!ready?.ok || ready.revision !== CONTENT_SCRIPT_REVISION) throw new Error("Content script revision mismatch.");
   return true;

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1242" height="1660" viewBox="0 0 1242 1660">
+  <defs><radialGradient id="g"><stop stop-color="#1d9bf0" stop-opacity=".34"/><stop offset="1" stop-color="#1d9bf0" stop-opacity="0"/></radialGradient></defs>
+  <rect width="1242" height="1660" fill="#000"/><circle cx="1080" cy="100" r="760" fill="url(#g)"/>
+  <g transform="translate(72 58)"><rect width="66" height="66" rx="16" fill="#fff"/><rect x="3" y="3" width="60" height="60" rx="14" fill="#000"/><g transform="translate(8 8) scale(2.0833333)" color="#fff"><path d="M16.7 5.3C12 1.9 5.3 4 3.9 9.7 2.5 15.4 7.4 20.5 13.3 19.7L14.2 19.15" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round"/><path d="M7.2 10.15h5.4M7.2 13.15h4.35" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="m14.2 19.15 1-2.9 4.55-4.55 2.6 2.6-4.55 4.55-3.6.3Z" fill="currentColor"/></g></g>
+  <text x="160" y="104" fill="#e7e9ea" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="29" font-weight="700">X Article Clipper</text>
+  <text x="72" y="300" fill="#fff" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="82" font-weight="800"><tspan x="72">你的内容</tspan><tspan x="72" dy="106">应该由你掌控</tspan></text>
+  <g font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif">
+    <rect x="72" y="548" width="1098" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="126" cy="604" r="13" fill="#1d9bf0"/><text x="166" y="616" fill="#e7e9ea" font-size="34" font-weight="650">本地存储，支持手动备份与恢复</text>
+    <rect x="72" y="684" width="1098" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="126" cy="740" r="13" fill="#1d9bf0"/><text x="166" y="752" fill="#e7e9ea" font-size="34" font-weight="650">不调用 X API，不上传保存的正文</text>
+    <rect x="72" y="820" width="1098" height="112" rx="28" fill="#16181c" stroke="#2f3336"/><circle cx="126" cy="876" r="13" fill="#1d9bf0"/><text x="166" y="888" fill="#e7e9ea" font-size="34" font-weight="650">MIT 开源，可自由使用、修改和商用</text>
+    <text x="72" y="1035" fill="#8b98a5" font-size="29"><tspan x="72">当前边界：不导入历史 Bookmarks，</tspan><tspan x="72" dy="46">仅从 Post / Article 详情页主动保存。</tspan></text>
+    <text x="72" y="1190" fill="#8b98a5" font-size="29"><tspan x="72">面向已经使用 X 获取高质量信息的</tspan><tspan x="72" dy="46">学习者、开发者和内容创作者。</tspan></text>
+    <rect x="72" y="1340" width="1098" height="126" rx="63" fill="#eff3f4"/><text x="621" y="1420" text-anchor="middle" fill="#0f1419" font-size="36" font-weight="750">GitHub：soyona/x-clipper</text>
+    <text x="72" y="1578" fill="#71767b" font-size="25">独立开发 · 当前需手动安装 Chrome 扩展</text><text x="1170" y="1578" text-anchor="end" fill="#71767b" font-family="Arial,sans-serif" font-size="25">6 / 6</text>
+  </g>
+</svg>

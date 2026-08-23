@@ -90,7 +90,7 @@ x-clipper slot | Grok slot（可选） | More wrapper
    - Capture 只允许展开目标 root 内的折叠内容；不得以整个文档高度为条件调用 `window.scrollTo()` 加载 Timeline、回复或推荐内容。
    - Article 标题以原文页的 `twitter-article-title`（及兼容标题 testid）为权威来源；采集块中与其完全相同的一级标题只保留一次。`Click to Follow/Subscribe` 属于 X 控件文案，不进入正文。
 7. 非详情路由上的残留入口点击必须被拒绝并立即清理；菜单打开后若 SPA 已离开原详情、主 Card 已断开或当前候选 URL 已变化，动作必须静默终止并关闭菜单，不得继续调用 Capture 或记录页面加载错误。
-8. 当前 revision 为 `detail-only-v2`；Background 发现旧 revision 时补注入当前打包脚本，新实例负责释放旧监听器并清理旧列表入口。
+8. 当前 revision 为 `detail-only-v3`；Background 发现旧 revision 时补注入当前打包脚本（先加载 `i18n.js`），新实例负责释放旧监听器并清理旧列表入口。
 9. 新打开或刷新的 X 页面只通过 Manifest `content_scripts` 声明式注入；Service Worker 启动、扩展安装和浏览器启动时不得扫描全部 X Tab 并主动执行脚本。只有用户点击扩展图标时，后台才可对当前 Tab 做显式补救注入。
 10. 再次点击、点击外部、`Escape`、滚动或窗口缩放时关闭菜单。
 11. Content Script dispose 时释放定时器、观察器、样式、菜单和入口节点。

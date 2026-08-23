@@ -1,34 +1,34 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>待读 · X Article Clipper</title>
+    <title>Read later · X Article Clipper</title>
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
-    <main id="app" class="inbox" aria-label="X Article Clipper Article 工作区">
-      <nav class="tabbar" aria-label="Article 工作区导航">
-        <button type="button" data-view="readingList" class="tab is-active" aria-label="待读" title="待读">
+    <main id="app" class="inbox" aria-label="X Article Clipper workspace" data-i18n-aria-label="workspace">
+      <nav class="tabbar" aria-label="Workspace navigation" data-i18n-aria-label="workspaceNavigation">
+        <button type="button" data-view="readingList" class="tab is-active" aria-label="Read later" title="Read later" data-i18n-aria-label="readingList" data-i18n-title="readingList">
           <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
             <g class="nav-icon-outline"><path d="M4 6h16l-1.8 12H5.8L4 6zM8 3.5h8M7 11h3l1.2 2h1.6l1.2-2h3"/></g>
             <path class="nav-icon-filled" fill-rule="evenodd" d="M8 3h8v2H8V3zM3.5 5.5h17l-2 12.5H5.5l-2-12.5zm3.15 5h3.9l1.1 2h.7l1.1-2h3.9l-.88 5.5H7.53l-.88-5.5z"/>
           </svg>
-          <span class="sr-only">待读</span>
+          <span class="sr-only" data-i18n="readingList">Read later</span>
         </button>
-        <button type="button" data-view="assets" class="tab" aria-label="素材库" title="素材库">
+        <button type="button" data-view="assets" class="tab" aria-label="Materials" title="Materials" data-i18n-aria-label="materials" data-i18n-title="materials">
           <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path class="nav-icon-outline" d="M6 3.75h12v16.5l-6-3.75-6 3.75V3.75z"/>
             <path class="nav-icon-filled" d="M6 3.75h12v16.5l-6-3.75-6 3.75V3.75z"/>
           </svg>
-          <span class="sr-only">素材库</span>
+          <span class="sr-only" data-i18n="materials">Materials</span>
         </button>
-        <button type="button" data-view="authors" class="tab" aria-label="作者" title="作者">
+        <button type="button" data-view="authors" class="tab" aria-label="Authors" title="Authors" data-i18n-aria-label="authors" data-i18n-title="authors">
           <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
             <g class="nav-icon-outline"><circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M2.75 20c.3-4.1 2.2-6.25 5.75-6.25S13.95 15.9 14.25 20M14 14.75c.7-.5 1.55-.75 2.5-.75 2.95 0 4.35 1.9 4.75 5.5"/></g>
             <g class="nav-icon-filled"><circle cx="8.5" cy="8" r="3.25"/><circle cx="16.5" cy="9" r="2.75"/><path d="M2.5 20.5c.25-4.55 2.2-6.75 6-6.75s5.75 2.2 6 6.75h-12zM14.2 15.15c.65-.75 1.45-1.15 2.55-1.15 3.1 0 4.5 2.05 4.75 6.5h-5.2c-.18-2.1-.85-3.9-2.1-5.35z"/></g>
           </svg>
-          <span class="sr-only">作者</span>
+          <span class="sr-only" data-i18n="authors">Authors</span>
         </button>
       </nav>
       <div class="main-column">
@@ -36,6 +36,7 @@
         <section id="view" class="view"></section>
       </div>
     </main>
+    <script src="i18n.js"></script>
     <script src="content-store.js"></script>
     <script src="content-db.js"></script>
     <script src="sidepanel-sort.js"></script>

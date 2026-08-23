@@ -1,0 +1,43 @@
+name: Improvement request
+description: Describe a user problem or outcome that X Article Clipper could address.
+title: "[Improvement]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the user problem and desired outcome. A feature list without a concrete workflow is difficult to evaluate.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      placeholder: When I…, I cannot…, which means…
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What would a successful outcome look like?
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Describe the current workflow
+      description: Explain what you do today and where the friction appears.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Optional solution idea
+      description: A proposed interface or implementation is welcome, but the user outcome remains primary.
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Product boundaries
+      options:
+        - label: This request does not require uploading saved content to a developer-operated server.
+          required: true
+        - label: I have noted any new Chrome permission or host access the idea may require.
+          required: true

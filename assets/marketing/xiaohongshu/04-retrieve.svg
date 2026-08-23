@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1242" height="1660" viewBox="0 0 1242 1660">
+  <defs><radialGradient id="g"><stop stop-color="#1d9bf0" stop-opacity=".28"/><stop offset="1" stop-color="#1d9bf0" stop-opacity="0"/></radialGradient><clipPath id="c"><rect x="72" y="794" width="1098" height="604" rx="24"/></clipPath></defs>
+  <rect width="1242" height="1660" fill="#000"/><circle cx="1130" cy="80" r="650" fill="url(#g)"/>
+  <g transform="translate(72 58)"><rect width="66" height="66" rx="16" fill="#fff"/><rect x="3" y="3" width="60" height="60" rx="14" fill="#000"/><g transform="translate(8 8) scale(2.0833333)" color="#fff"><path d="M16.7 5.3C12 1.9 5.3 4 3.9 9.7 2.5 15.4 7.4 20.5 13.3 19.7L14.2 19.15" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round"/><path d="M7.2 10.15h5.4M7.2 13.15h4.35" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="m14.2 19.15 1-2.9 4.55-4.55 2.6 2.6-4.55 4.55-3.6.3Z" fill="currentColor"/></g></g>
+  <text x="160" y="104" fill="#e7e9ea" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="29" font-weight="700">X Article Clipper</text>
+  <text x="72" y="300" fill="#fff" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="82" font-weight="800"><tspan x="72">按标签检索</tspan><tspan x="72" dy="106">不再逐条翻找</tspan></text>
+  <text x="76" y="560" fill="#8b98a5" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="36"><tspan x="76">把“大浪淘沙”后的内容</tspan><tspan x="76" dy="54">组织成自己的主题资料库</tspan></text>
+  <rect x="58" y="780" width="1126" height="632" rx="32" fill="#16181c" stroke="#536471" stroke-width="2"/>
+  <image href="../screenshots/03-tag-search.png" x="72" y="794" width="1098" height="604" preserveAspectRatio="xMidYMid meet" clip-path="url(#c)"/>
+  <text x="72" y="1578" fill="#71767b" font-family="-apple-system,'PingFang SC','Microsoft YaHei',Arial,sans-serif" font-size="25">真正的价值，不是收藏，而是再次找到</text><text x="1170" y="1578" text-anchor="end" fill="#71767b" font-family="Arial,sans-serif" font-size="25">4 / 6</text>
+</svg>

@@ -1,4 +1,7 @@
 (function initializeXClipperContentScript() {
+const i18n = globalThis.XClipperI18n;
+const t = (key, values) => i18n.t(key, values);
+const i18nReady = i18n.init();
 const previousArticleActionsEntrySlots = new Set([
   ...document.querySelectorAll("[data-x-clipper-article-actions-slot]"),
   ...[...document.querySelectorAll("[data-x-clipper-article-actions-entry]")]
@@ -123,7 +126,7 @@ const pendingArticleActionsRoots = new Set();
 const pendingArticleActionsMoreButtons = new Set();
 const runtimeMessageListeners = [];
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
-const CONTENT_SCRIPT_REVISION = "detail-only-v2";
+const CONTENT_SCRIPT_REVISION = "detail-only-v3";
 const contentScriptAbortController = new AbortController();
 const contentScriptEventOptions = { signal: contentScriptAbortController.signal };
 const articleMenuDiagnostics = { revision: CONTENT_SCRIPT_REVISION, stage: "initialized", history: [] };
@@ -539,7 +542,7 @@ function showPageToast(message, action = null) {
 }
 
 async function captureContentCandidate(candidate, root) {
-  if (!candidate) throw new Error("无法识别当前内容。");
+  if (!candidate) throw new Error(t("contentNotRecognized"));
   if (candidate.contentType === "post") {
     await prepareTargetContent(root);
     return globalThis.XClipperPostSnapshot.createSnapshot(root, candidate, {
@@ -555,11 +558,11 @@ async function extractAndCopyCurrentPage(candidate = null, root = null) {
   const selected = candidate || contentCandidateFromPage();
   const capture = await captureContentCandidate(selected, root || findRoot());
   await navigator.clipboard.writeText(capture.content);
-  showPageToast("Markdown 已复制");
+  showPageToast(t("markdownCopied"));
 }
 
 async function previewCurrentPageMarkdown(candidate = null, root = null) {
-  if (candidate?.contentType !== "article") throw new Error("只有 Article 支持 Markdown 预览。");
+  if (candidate?.contentType !== "article") throw new Error(t("articlePreviewOnly"));
   const capture = await capturePage(root || findRoot(), candidate?.sourceUrl || location.href, candidate, { validateLocation: true });
   const result = await chrome.runtime.sendMessage({ type: "open-markdown-preview", capture });
   if (result?.error) throw new Error(result.error);
@@ -567,13 +570,13 @@ async function previewCurrentPageMarkdown(candidate = null, root = null) {
 
 async function saveCurrentPageToLibrary(candidate = null, root = null) {
   const article = candidate || contentCandidateFromPage(articleActionsAuthor(root || findRoot(), candidate));
-  if (article?.contentType !== "article") throw new Error("只有 Article 可以保存为素材。");
+  if (article?.contentType !== "article") throw new Error(t("articleMaterialOnly"));
   const capture = await capturePage(root || findRoot(), article.sourceUrl, article, { validateLocation: true });
   const saved = await chrome.runtime.sendMessage({ type: "save-content-item", target: "material", capture });
   if (saved?.error) throw new Error(saved.error);
   const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId: saved.item.id, patch: { materialState: "unused" } });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已保存为素材 · ", { label: "查看", view: "assets" });
+  showPageToast(t("savedMaterial"), { label: t("view"), view: "assets" });
 }
 
 async function removeCurrentPageFromLibrary(sourceUrl) {
@@ -582,19 +585,19 @@ async function removeCurrentPageFromLibrary(sourceUrl) {
   if (!item) return;
   const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId: item.id, patch: { materialState: "none" } });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已从素材库移除");
+  showPageToast(t("removedMaterial"));
 }
 
 async function addReadingArticle(reference) {
   const result = await chrome.runtime.sendMessage({ type: "save-reading-article", reference });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已加入待读 · ", { label: "查看", view: "readingList" });
+  showPageToast(t("addedReading"), { label: t("view"), view: "readingList" });
 }
 
 async function removeReadingArticle(sourceUrl) {
   const result = await chrome.runtime.sendMessage({ type: "remove-reading-article", sourceUrl });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已从待读移除");
+  showPageToast(t("removedReading"));
 }
 
 async function addContentForLater(candidate, root) {
@@ -606,25 +609,25 @@ async function addContentForLater(candidate, root) {
     result = await chrome.runtime.sendMessage({ type: "save-content-item", target: "reading", capture });
   }
   if (result?.error) throw new Error(result.error);
-  showPageToast(result.completed ? "已补全并加入待读 · " : result.existing ? "已在待读中 · " : "已加入待读 · ", { label: "查看", view: "readingList" });
+  showPageToast(result.completed ? t("completedReading") : result.existing ? t("alreadyReading") : t("addedReading"), { label: t("view"), view: "readingList" });
 }
 
 async function removeContentForLater(itemId) {
   const result = await chrome.runtime.sendMessage({ type: "update-content-item", itemId, patch: { readState: "read" } });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已从待读移除");
+  showPageToast(t("removedReading"));
 }
 
 async function saveCollectedAuthor(author) {
   const result = await chrome.runtime.sendMessage({ type: "save-content-author", author });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已收藏作者 · ", { label: "查看", view: "authors" });
+  showPageToast(t("savedAuthor"), { label: t("view"), view: "authors" });
 }
 
 async function removeCollectedAuthor(handle) {
   const result = await chrome.runtime.sendMessage({ type: "remove-content-author", handle });
   if (result?.error) throw new Error(result.error);
-  showPageToast("已取消收藏作者");
+  showPageToast(t("removedAuthor"));
 }
 
 function removeArticleMoreMenu() {
@@ -737,10 +740,10 @@ function injectArticleActionsEntry(root, targetMoreButton = null) {
   const entry = document.createElement("button");
   entry.dataset.xClipperArticleActionsEntry = "true";
   entry.setAttribute("type", "button");
-  entry.setAttribute("aria-label", "X Article Clipper 操作");
+  entry.setAttribute("aria-label", t("actions"));
   entry.setAttribute("aria-haspopup", "menu");
   entry.setAttribute("aria-expanded", "false");
-  entry.setAttribute("title", "X Article Clipper 操作");
+  entry.setAttribute("title", t("actions"));
   const geometryButton = utilityButton || moreButton;
   const buttonRect = geometryButton.getBoundingClientRect();
   const sourceIcon = geometryButton.querySelector("svg");
@@ -1046,7 +1049,7 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
   const menu = document.createElement("div");
   menu.id = "x-clipper-article-actions-menu";
   menu.setAttribute("role", "menu");
-  menu.setAttribute("aria-label", "X Article Clipper 操作");
+  menu.setAttribute("aria-label", t("actions"));
   const pageStyle = getComputedStyle(document.body);
   menu.style.backgroundColor = pageStyle.backgroundColor;
   menu.style.color = pageStyle.color;
@@ -1067,9 +1070,9 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
         return;
       }
       const pendingLabel = action === "reading-list" && !isInReadingList
-        ? "正在加入待读…"
+        ? t("addingReading")
         : action === "library" && !isInLibrary
-          ? "正在保存素材…"
+          ? t("savingMaterial")
           : "";
       if (pendingLabel) {
         labelSlot.textContent = pendingLabel;
@@ -1105,17 +1108,17 @@ async function showArticleActionsMenu(entry, sourceCandidate, root) {
   };
   if (candidate.contentType === "post") {
     menu.append(
-      actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
-      actionRow("复制 Markdown", copyTextIcon(), "copy-markdown"),
+      actionRow(isInReadingList ? t("removeReading") : t("addReading"), readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
+      actionRow(t("copyMarkdown"), copyTextIcon(), "copy-markdown"),
     );
   } else if (!isArticleSourcePage()) {
-    menu.append(actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList));
+    menu.append(actionRow(isInReadingList ? t("removeReading") : t("addReading"), readingTrayIcon(isInReadingList), "reading-list", isInReadingList));
   } else {
     menu.append(
-      actionRow(isInReadingList ? "从待读移除" : "加入待读", readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
-      actionRow(isInLibrary ? "从素材库移除" : "保存为素材", libraryBookmarkIcon(isInLibrary), "library", isInLibrary),
-      actionRow("预览 / 复制 Markdown", markdownPreviewIcon(), "preview"),
-      actionRow(isAuthorSaved ? "取消收藏作者" : "收藏作者", isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author", isAuthorSaved),
+      actionRow(isInReadingList ? t("removeReading") : t("addReading"), readingTrayIcon(isInReadingList), "reading-list", isInReadingList),
+      actionRow(isInLibrary ? t("removeMaterial") : t("saveMaterial"), libraryBookmarkIcon(isInLibrary), "library", isInLibrary),
+      actionRow(t("previewCopyMarkdown"), markdownPreviewIcon(), "preview"),
+      actionRow(isAuthorSaved ? t("removeAuthor") : t("saveAuthor"), isAuthorSaved ? removeAuthorIcon() : saveAuthorIcon(), "author", isAuthorSaved),
     );
   }
   const style = createArticleActionsMenuStyle();
@@ -1145,7 +1148,7 @@ async function openArticleActionsFromEntry(entry, sourceRoot = null) {
   await showArticleActionsMenu(entry, candidate, root);
 }
 
-startArticleActionsEntryObserver();
+i18nReady.then(startArticleActionsEntryObserver);
 
 document.addEventListener("mousedown", (event) => {
   if (articleMoreMenuState
@@ -1362,20 +1365,20 @@ async function expandCollapsedContent(root) {
 }
 
 async function prepareTargetContent(root) {
-  if (!root?.isConnected) throw new Error("目标内容已离开页面，请重新打开原文后重试。");
+  if (!root?.isConnected) throw new Error(t("staleContent"));
   await expandCollapsedContent(root);
-  if (!root.isConnected) throw new Error("目标内容在采集过程中发生变化，请重试。");
+  if (!root.isConnected) throw new Error(t("changingContent"));
 }
 
 async function capturePage(root = findRoot(), sourceUrl = location.href, sourceCandidate = null, { validateLocation = false } = {}) {
-  if (!root) throw new Error("Open a post or Article and try again.");
+  if (!root) throw new Error(t("openPostOrArticle"));
   const expectedSourceUrl = normalizedSourceUrl(sourceUrl);
   if (validateLocation && expectedSourceUrl && expectedSourceUrl !== normalizedSourceUrl(location.href)) {
-    throw new Error("当前页面与目标原文不一致。");
+    throw new Error(t("wrongSource"));
   }
   await prepareTargetContent(root);
   if (validateLocation && expectedSourceUrl && expectedSourceUrl !== normalizedSourceUrl(location.href)) {
-    throw new Error("采集过程中原文地址发生变化，请重试。");
+    throw new Error(t("sourceChanged"));
   }
   const sourceHandle = decodeURIComponent(location.pathname.split("/").filter(Boolean)[0] || "");
   const blocks = [];
@@ -1415,7 +1418,7 @@ async function capturePage(root = findRoot(), sourceUrl = location.href, sourceC
     || "";
   const normalizedBlocks = globalThis.XClipperMarkdown.withoutRepeatedDocumentTitle(blocks, documentTitle);
   const content = globalThis.XClipperMarkdown.blocksToMarkdown(normalizedBlocks, { includeImages: false });
-  if (!content) throw new Error("No content found. Please wait for the page to finish loading.");
+  if (!content) throw new Error(t("noContentFound"));
   const plainText = normalizedBlocks
     .filter((block) => block.type !== "image")
     .map((block) => block.text || block.url || "")
@@ -1468,7 +1471,7 @@ addRuntimeMessageListener((message, sender, sendResponse) => {
   if (message?.type !== "capture-x") return;
   capturePage()
     .then(sendResponse)
-    .catch((error) => sendResponse({ error: error.message || "Failed to read the content." }));
+    .catch((error) => sendResponse({ error: i18n.localizeError(error.message, "contentReadFailed") }));
   return true;
 });
 
@@ -1477,7 +1480,7 @@ addRuntimeMessageListener((message, sender, sendResponse) => {
   const candidate = contentCandidateFromPage();
   captureContentCandidate(candidate, findRoot())
     .then(sendResponse)
-    .catch((error) => sendResponse({ error: error.message || "无法读取内容。" }));
+    .catch((error) => sendResponse({ error: i18n.localizeError(error.message, "contentReadFailed") }));
   return true;
 });
 
@@ -1491,4 +1494,5 @@ globalThis.__xClipperContentScript = {
   diagnostics: articleMenuDiagnostics,
   dispose: disposeContentScript,
 };
+i18n.subscribe(removeArticleMoreMenu);
 }());

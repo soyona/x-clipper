@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Copy Markdown · X Article Clipper</title>
+    <title data-i18n="copyMarkdownTitle">Copy Markdown · X Article Clipper</title>
     <style>
       :root {
         color-scheme: light;
@@ -35,11 +35,12 @@
   </head>
   <body>
     <main class="popup-card" aria-label="X Article Clipper Copy Markdown">
-      <h1>Copy Markdown</h1>
-      <p class="description">Copy the current X content as Markdown. Nothing is uploaded.</p>
-      <button id="import" type="button">Extract and copy</button>
+      <h1 data-i18n="copyMarkdown">Copy Markdown</h1>
+      <p class="description" data-i18n="copyMarkdownDescription">Copy the current X content as Markdown. Nothing is uploaded.</p>
+      <button id="import" type="button" data-i18n="extractAndCopy">Extract and copy</button>
       <div id="status" role="status" aria-live="polite"></div>
     </main>
+    <script src="i18n.js"></script>
     <script src="markdown.js"></script>
     <script src="popup.js"></script>
   </body>

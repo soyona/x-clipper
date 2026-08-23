@@ -58,7 +58,7 @@
     })).filter((block) => block.url);
     const blocks = [paragraph, ...imageBlocks];
     const markdown = helpers.markdownFromBlocks?.(blocks)
-      || blocks.map((block) => block.type === "image" ? `![${block.altText || "图片"}](${block.url})` : block.text).join("\n\n");
+      || blocks.map((block) => block.type === "image" ? `![${block.altText || "image"}](${block.url})` : block.text).join("\n\n");
     return {
       ...candidate,
       kind: "x-clipper.capture",

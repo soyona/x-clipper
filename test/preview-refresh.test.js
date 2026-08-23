@@ -3,8 +3,9 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import test from "node:test";
 
+const i18nSource = readFileSync(new URL("../i18n.js", import.meta.url), "utf8");
 const previewSource = readFileSync(new URL("../preview.js", import.meta.url), "utf8")
-  .replace(/\nloadPreview\(\);\s*$/u, "\nglobalThis.loadPreviewForTest = loadPreview;");
+  .replace(/\ni18n\.subscribe\(\(\) => \{ if \(preview\) renderPreview\(preview\); \}\);\ni18n\.init\(\)\.then\(loadPreview\);\s*$/u, "\nglobalThis.loadPreviewForTest = loadPreview;");
 
 function fakeElement({ hidden = false, disabled = false } = {}) {
   return {
@@ -46,15 +47,17 @@ function previewHarness({ search, local = {}, session = {}, contentItem = null }
     Date,
     location: { search },
     window: { close() {} },
-    navigator: { clipboard: { writeText: async () => {} } },
+    navigator: { language: "zh-CN", clipboard: { writeText: async () => {} } },
     document: {
       title: "",
       querySelector(selector) { return selectors[selector]; },
     },
     chrome: {
+      i18n: { getUILanguage: () => "zh-CN" },
       runtime: { sendMessage: async () => ({ ok: true }) },
       storage: {
         local: { get: async (key) => ({ [key]: local[key] }) },
+        onChanged: { addListener() {} },
         session: {
           get: async (key) => ({ [key]: session[key] }),
           set: async (values) => Object.assign(session, values),
@@ -66,6 +69,7 @@ function previewHarness({ search, local = {}, session = {}, contentItem = null }
     globalThis: null,
   };
   context.globalThis = context;
+  runInNewContext(i18nSource, context);
   runInNewContext(previewSource, context);
   return { context, elements, local, session, removed };
 }

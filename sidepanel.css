@@ -107,6 +107,11 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .data-management strong { font-size: 15px; line-height: 20px; }
 .data-management p { margin: 2px 0 0; color: var(--x-secondary); font-size: 13px; line-height: 16px; }
 .data-management-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+.language-management { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding: 16px; border-top: 1px solid var(--x-border); color: var(--x-primary); }
+.language-management strong { font-size: 15px; line-height: 20px; }
+.language-management p { margin: 2px 0 0; color: var(--x-secondary); font-size: 13px; line-height: 16px; }
+.language-select { min-height: 36px; padding: 0 32px 0 12px; border: 1px solid var(--twitter-color-border); border-radius: var(--twitter-radius-pill); background: #fff; color: var(--x-primary); font: inherit; font-weight: 700; }
+.language-select:focus-visible { outline: 2px solid var(--x-blue); outline-offset: 2px; }
 
 .asset-avatar { flex: 0 0 40px; }
 .asset-author { flex-wrap: nowrap; }
@@ -162,4 +167,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
   .article-post { grid-template-columns: 34px minmax(0, 1fr); gap: 10px; padding-inline: 12px; }
   .article-avatar { width: 34px; height: 34px; }
   .article-handle { display: none; }
+  .language-management, .data-management { align-items: stretch; flex-direction: column; }
+  .language-select { width: 100%; }
+  .data-management-actions { flex-wrap: wrap; }
 }

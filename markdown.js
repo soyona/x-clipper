@@ -20,7 +20,7 @@
     return blocks
       .map((block) => {
         if (block.type === "image") {
-          return includeImages ? `![${block.altText || "图片"}](${block.url || ""})` : "";
+          return includeImages ? `![${block.altText || "image"}](${block.url || ""})` : "";
         }
         if (block.type === "code") {
           return `\`\`\`${block.language || ""}\n${block.text || ""}\n\`\`\``;

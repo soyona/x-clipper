@@ -103,6 +103,7 @@ test("Manifest 保持独立运行所需的最小权限", () => {
   assert.equal(manifest.action.default_popup, undefined);
   assert.equal(manifest.action.default_title, "Open X Article Clipper");
   assert.equal(manifest.background.service_worker, "background.js");
+  assert.deepEqual(manifest.content_scripts[0].js, ["i18n.js", "markdown.js", "post-snapshot.js", "content.js"]);
 });
 
 test("1.1.1 发布元数据包含仓库和隐私披露", () => {
@@ -189,8 +190,8 @@ test("Background 暴露统一内容持久化、图片固化与本地阅读协议
   for (const type of ["read-content-state", "save-content-item", "capture-article-reference", "update-content-item", "remove-content-item", "save-content-author", "remove-content-author", "open-content-reader"]) {
     assert.match(background, new RegExp(`message\\?\\.type === "${type}"`, "u"));
   }
-  assert.match(background, /CONTENT_SCRIPT_REVISION = "detail-only-v2"/u);
-  assert.match(background, /files: \["markdown\.js", "post-snapshot\.js", "content\.js"\]/u);
+  assert.match(background, /CONTENT_SCRIPT_REVISION = "detail-only-v3"/u);
+  assert.match(background, /files: \["i18n\.js", "markdown\.js", "post-snapshot\.js", "content\.js"\]/u);
   assert.match(background, /fetch\(sourceUrl, \{ credentials: "omit", referrerPolicy: "no-referrer" \}\)/u);
   assert.match(background, /new Set\(imageBlocks\.map\(\(block\) => persistentImageUrl\(block\.url\)\)\.filter\(Boolean\)\)/u);
   assert.match(background, /Promise\.all\(Array\.from\(\{ length: Math\.min\(4, sourceUrls\.length\) \}, downloadNext\)\)/u);
@@ -242,7 +243,7 @@ test("Side Panel 使用 X 原始蓝色与金色认证徽标", () => {
 
 test("Content Script 只在 Post 或 Article 详情页提供入口", () => {
   const content = source("../content.js");
-  assert.match(content, /CONTENT_SCRIPT_REVISION = "detail-only-v2"/u);
+  assert.match(content, /CONTENT_SCRIPT_REVISION = "detail-only-v3"/u);
   assert.match(content, /function contentCandidateForActionsRoot\(root\)/u);
   assert.match(content, /isArticleSourcePage\(\) \? contentCandidateFromPage\(\) : null/u);
   assert.doesNotMatch(content, /isArticleSourcePage\(\) \? contentCandidateFromPage\(\) : articleCandidateFromListRoot\(root\)/u);
@@ -250,12 +251,12 @@ test("Content Script 只在 Post 或 Article 详情页提供入口", () => {
   assert.match(content, /if \(!isArticleSourcePage\(\)\) \{[\s\S]*list-entry-rejected[\s\S]*return;/u);
   assert.match(content, /if \(!isArticleSourcePage\(\) \|\| !root\?\.isConnected \|\| !matchesSource\(currentCandidate, candidate\.sourceUrl\)\)/u);
   assert.match(content, /if \(!cover && articleMarker < 0 && !isArticlesIndexPage\(\)\) return null;/u);
-  assert.match(content, /if \(candidate\.contentType === "post"\) \{\s*menu\.append\([\s\S]*"加入待读"[\s\S]*"复制 Markdown"/u);
-  assert.match(content, /else if \(!isArticleSourcePage\(\)\) \{\s*menu\.append\(actionRow\(isInReadingList \? "从待读移除" : "加入待读"/su);
-  assert.match(content, /actionRow\(isInLibrary \? "从素材库移除" : "保存为素材"[\s\S]*actionRow\("预览 \/ 复制 Markdown"[\s\S]*actionRow\(isAuthorSaved \? "取消收藏作者" : "收藏作者"/u);
+  assert.match(content, /if \(candidate\.contentType === "post"\) \{\s*menu\.append\([\s\S]*t\("addReading"\)[\s\S]*t\("copyMarkdown"\)/u);
+  assert.match(content, /else if \(!isArticleSourcePage\(\)\) \{\s*menu\.append\(actionRow\(isInReadingList \? t\("removeReading"\) : t\("addReading"\)/su);
+  assert.match(content, /actionRow\(isInLibrary \? t\("removeMaterial"\) : t\("saveMaterial"\)[\s\S]*actionRow\(t\("previewCopyMarkdown"\)[\s\S]*actionRow\(isAuthorSaved \? t\("removeAuthor"\) : t\("saveAuthor"\)/u);
   assert.match(content, /XClipperPostSnapshot\.createSnapshot/u);
-  assert.match(content, /result\.completed \? "已补全并加入待读 · "/u);
-  assert.match(content, /"正在加入待读…"[\s\S]*"正在保存素材…"/u);
+  assert.match(content, /result\.completed \? t\("completedReading"\)/u);
+  assert.match(content, /t\("addingReading"\)[\s\S]*t\("savingMaterial"\)/u);
   assert.match(content, /row\.setAttribute\("aria-busy", "true"\)/u);
   assert.match(content, /window\.requestAnimationFrame\(resolve\)/u);
   assert.match(content, /window\.addEventListener\("resize", removeArticleMoreMenu/u);
@@ -291,11 +292,14 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.match(script, /collection: "reading", sortBy: state\.readingSort/u);
   assert.match(script, /collection: "material", sortBy: state\.assetSort/u);
   assert.match(html, /<script src="sidepanel-sort\.js"><\/script>/u);
+  assert.match(html, /<script src="i18n\.js"><\/script>[\s\S]*<script src="sidepanel\.js"><\/script>/u);
+  assert.match(script, /data-language-select/u);
+  assert.match(script, /i18n\.setLocale/u);
   assert.match(css, /\.sort-trigger \{[^}]*border-radius: var\(--twitter-radius-pill\)/u);
   assert.match(script, /data-action="reading-delete"/u);
   assert.match(script, /data-action="reading-dialog-confirm"/u);
   assert.match(script, /type: "remove-content-item", itemId: target\.dataset\.id/u);
-  assert.match(script, /此内容也会从素材库删除，且无法恢复。/u);
+  assert.match(script, /t\("deleteAlsoMaterial"\)/u);
   assert.doesNotMatch(script, /article-card-excerpt/u);
   assert.match(script, /function renderArticleCard\(item,/u);
   assert.match(script, /renderArticleCard\(item, \{ action: "reading-open" \}\)/u);
@@ -334,7 +338,7 @@ test("Preview 支持统一内容本地阅读与旧版临时预览", () => {
   assert.match(script, /type: "save-article-asset"/u);
   assert.match(script, /contentType: "article"/u);
   assert.match(script, /navigator\.clipboard\.writeText\(preview\.markdown\)/u);
-  assert.match(script, /打开 X 原文/u);
+  assert.match(script, /t\("openXOriginal"\)/u);
   assert.doesNotMatch(script, /preview-job|materialize|setInterval|tabs\.create/u);
 });
 

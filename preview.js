@@ -4,6 +4,8 @@ const copyButton = document.querySelector("#copy");
 const saveButton = document.querySelector("#save");
 const previewTitle = document.querySelector("#preview-title");
 const previewSubtitle = document.querySelector("#preview-subtitle");
+const i18n = globalThis.XClipperI18n;
+const t = (key, values) => i18n.t(key, values);
 const CONTENT_INBOX_STORAGE_KEY = "x-clipper-content-inbox";
 const MARKDOWN_PREVIEW_STORAGE_PREFIX = "x-clipper-markdown-preview:";
 let preview = null;
@@ -20,7 +22,7 @@ function escapeHtml(value) {
 
 function formatDate(value) {
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? text(value) : `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  return Number.isNaN(date.valueOf()) ? text(value) : new Intl.DateTimeFormat(i18n.getLocale(), { year: "numeric", month: "numeric", day: "numeric" }).format(date);
 }
 
 function authorProfileUrl(handle) {
@@ -56,7 +58,7 @@ function renderMarkdown(markdown, title = "") {
   const closeList = () => { if (listType) output.push(`</${listType}>`); listType = ""; };
   const closeCode = () => {
     if (!inCode) return;
-    output.push(`<div class="preview-code"><div class="preview-code-header"><span>${escapeHtml(codeLanguage)}</span><button type="button" class="preview-code-copy" data-code-copy>复制</button></div><pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre></div>`);
+    output.push(`<div class="preview-code"><div class="preview-code-header"><span>${escapeHtml(codeLanguage)}</span><button type="button" class="preview-code-copy" data-code-copy>${escapeHtml(t("copy"))}</button></div><pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre></div>`);
     codeLines = [];
     codeLanguage = "";
     inCode = false;
@@ -91,12 +93,12 @@ function renderMarkdown(markdown, title = "") {
   });
   closeCode();
   closeList();
-  return output.join("") || '<p class="empty">这篇 Article 没有可预览的 Markdown 内容。</p>';
+  return output.join("") || `<p class="empty">${escapeHtml(t("articleEmpty"))}</p>`;
 }
 
 function renderPostBody(markdown) {
   const body = text(markdown).trim();
-  return body ? `<p>${markdownInline(body)}</p>` : '<p class="empty">这条 Post 没有可预览的正文。</p>';
+  return body ? `<p>${markdownInline(body)}</p>` : `<p class="empty">${escapeHtml(t("postEmpty"))}</p>`;
 }
 
 function renderBlocks(blocks, title = "") {
@@ -131,21 +133,21 @@ async function hydrateLocalImages() {
 
 function renderPreview(value) {
   preview = value;
-  previewTitle.textContent = previewMode === "content" ? "本地阅读" : "Markdown 预览";
-  previewSubtitle.textContent = previewMode === "content" ? "已保存于此设备" : value.canSave ? "检查后可保存为素材" : "仅在此设备临时展示";
+  previewTitle.textContent = previewMode === "content" ? t("localReading") : t("markdownPreview");
+  previewSubtitle.textContent = previewMode === "content" ? t("savedOnDevice") : value.canSave ? t("reviewThenSave") : t("temporaryOnDevice");
   const sourceUrl = /^https:\/\/(?:www\.)?(?:x|twitter)\.com\//u.test(value.sourceUrl || "") ? value.sourceUrl : "";
-  const sourceLink = sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">打开 X 原文</a>` : "";
+  const sourceLink = sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t("openXOriginal"))}</a>` : "";
   const isPost = value.contentType === "post";
   const renderedContent = value.blocks?.length
     ? renderBlocks(value.blocks, isPost ? "" : value.title)
     : isPost ? renderPostBody(value.markdown) : renderMarkdown(value.markdown, value.title);
   article.classList.add("is-markdown");
-  article.innerHTML = `<div class="preview-info"><span>${isPost ? "Post" : "Article"} 阅读视图</span>${metadata(value)}${sourceLink}</div>${renderedContent}${value.mediaNotice === "video" ? '<p class="preview-media-notice">含视频，仅原文可播放</p>' : ""}`;
+  article.innerHTML = `<div class="preview-info"><span>${escapeHtml(t("readingView", { type: isPost ? "Post" : "Article" }))}</span>${metadata(value)}${sourceLink}</div>${renderedContent}${value.mediaNotice === "video" ? `<p class="preview-media-notice">${escapeHtml(t("videoOriginalOnly"))}</p>` : ""}`;
   copyButton.disabled = false;
   saveButton.hidden = !(value.canSave || (previewMode === "content" && value.materialState === "none"));
   const saveLabel = saveButton.querySelector?.("span");
-  if (saveLabel) saveLabel.textContent = "保存为素材";
-  document.title = `${isPost ? value.authorName || value.authorHandle || "Post" : value.title || "Article"} · 预览`;
+  if (saveLabel) saveLabel.textContent = t("saveMaterial");
+  document.title = `${isPost ? value.authorName || value.authorHandle || "Post" : value.title || "Article"} · ${t("previewDocumentTitle")}`;
   hydrateLocalImages().catch(() => {});
 }
 
@@ -156,9 +158,9 @@ async function loadPreview() {
     previewMode = mode || "";
     if (mode === "content") {
       const itemId = params.get("itemId") || "";
-      if (!itemId) throw new Error("阅读链接无效，请返回待读列表重新打开。");
+      if (!itemId) throw new Error(t("invalidReadingLink"));
       const item = await globalThis.XClipperContentDatabase.getItem(itemId);
-      if (!item) throw new Error("内容不存在或已被删除，请返回待读列表重新打开。");
+      if (!item) throw new Error(t("missingReadingItem"));
       const openedAt = new Date().toISOString();
       await chrome.runtime.sendMessage({ type: "update-content-item", itemId, patch: { readState: "read", openedAt } });
       renderPreview({ ...item, canSave: false });
@@ -166,30 +168,30 @@ async function loadPreview() {
     }
     if (mode === "library") {
       const assetId = params.get("assetId") || "";
-      if (!assetId) throw new Error("预览链接无效，请返回素材库重新打开。");
+      if (!assetId) throw new Error(t("invalidPreviewLink"));
       const stored = await chrome.storage.local.get(CONTENT_INBOX_STORAGE_KEY);
       const inbox = stored[CONTENT_INBOX_STORAGE_KEY];
       const asset = inbox?.schemaVersion === 1 && Array.isArray(inbox.assets)
         ? inbox.assets.find((item) => item.id === assetId)
         : null;
-      if (!asset) throw new Error("素材不存在或已被删除，请返回素材库重新打开。");
+      if (!asset) throw new Error(t("missingMaterial"));
       renderPreview({ ...asset, canSave: false });
       return;
     }
     const previewId = params.get("previewId") || "";
     if (mode !== "current" || !/^[0-9a-f-]{36}$/iu.test(previewId)) {
-      throw new Error("预览链接无效，请返回 X 重新打开。");
+      throw new Error(t("invalidXPreviewLink"));
     }
     temporaryPreviewKey = `${MARKDOWN_PREVIEW_STORAGE_PREFIX}${previewId}`;
     const result = await chrome.storage.session.get(temporaryPreviewKey);
-    if (!result[temporaryPreviewKey]) throw new Error("预览已过期，请返回 X 重新打开。");
+    if (!result[temporaryPreviewKey]) throw new Error(t("expiredPreview"));
     renderPreview(result[temporaryPreviewKey]);
   } catch (error) {
     preview = null;
     copyButton.disabled = true;
     saveButton.hidden = true;
-    article.innerHTML = `<p class="empty">${escapeHtml(error.message || "无法打开预览。")}</p>`;
-    status.textContent = "预览不可用";
+    article.innerHTML = `<p class="empty">${escapeHtml(i18n.localizeError(error.message, "previewOpenFailed"))}</p>`;
+    status.textContent = t("previewUnavailable");
   }
 }
 
@@ -197,11 +199,11 @@ copyButton.addEventListener("click", async () => {
   if (!preview?.markdown) return;
   try {
     await navigator.clipboard.writeText(preview.markdown);
-    copyButton.setAttribute("aria-label", "Markdown 已复制");
-    copyButton.title = "Markdown 已复制";
-    status.textContent = "Markdown 已复制（不含图片）";
+    copyButton.setAttribute("aria-label", t("markdownCopied"));
+    copyButton.title = t("markdownCopied");
+    status.textContent = t("markdownCopiedNoImages");
   } catch {
-    status.textContent = "复制失败，请检查剪贴板权限。";
+    status.textContent = t("clipboardFailed");
   }
 });
 
@@ -217,9 +219,9 @@ saveButton.addEventListener("click", async () => {
     preview.materialState = previewMode === "content" ? "unused" : preview.materialState;
     saveButton.hidden = true;
     if (temporaryPreviewKey) await chrome.storage.session.set({ [temporaryPreviewKey]: preview });
-    status.textContent = "已保存为素材";
+    status.textContent = t("savedAsMaterial");
   } catch (error) {
-    status.textContent = error.message || "保存失败";
+    status.textContent = i18n.localizeError(error.message, "saveFailed");
     saveButton.disabled = false;
   }
 });
@@ -234,11 +236,12 @@ article.addEventListener("click", async (event) => {
   const code = button.closest(".preview-code")?.querySelector("code")?.textContent || "";
   try {
     await navigator.clipboard.writeText(code);
-    button.textContent = "已复制";
-    status.textContent = "代码已复制";
+    button.textContent = t("copied");
+    status.textContent = t("codeCopied");
   } catch {
-    status.textContent = "复制失败，请检查剪贴板权限。";
+    status.textContent = t("clipboardFailed");
   }
 });
 
-loadPreview();
+i18n.subscribe(() => { if (preview) renderPreview(preview); });
+i18n.init().then(loadPreview);

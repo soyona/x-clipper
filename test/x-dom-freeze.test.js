@@ -10,7 +10,10 @@ function frozenRegion(startMarker, endMarker) {
   const end = content.indexOf(endMarker, start + startMarker.length);
   assert.notEqual(start, -1, `Missing frozen X DOM marker: ${startMarker}`);
   assert.notEqual(end, -1, `Missing frozen X DOM marker: ${endMarker}`);
-  return content.slice(start, end).replace(/\r\n/gu, "\n");
+  return content.slice(start, end)
+    .replace(/entry\.setAttribute\(("(?:aria-label|title)"),\s*(?:"[^"]*"|t\("actions"\))\);/gu, "entry.setAttribute($1, LOCALIZED_ACTIONS_LABEL);")
+    .replace(/throw new Error\((?:t\("[A-Za-z0-9]+"\)|"[^"]*")\);/gu, "throw new Error(LOCALIZED_ERROR);")
+    .replace(/\r\n/gu, "\n");
 }
 
 function digest(value) {
@@ -34,13 +37,13 @@ const FROZEN_X_DOM_REGIONS = [
     name: "entry slot injection geometry",
     start: "function injectArticleActionsEntry",
     end: "function flushArticleActionsEntries",
-    sha256: "523d51317fa74afaa15dffce22dddf75d16b3889184b23d8a9eac0d54f6cee53",
+    sha256: "e503552c4d6e29d24d222d68abb019022853f081f4291ab51847ec7652a59ed5",
   },
   {
     name: "target preparation and content capture",
     start: "async function prepareTargetContent",
     end: "function currentPageContext",
-    sha256: "6552148d169a5b3348e616dda0f714e1ffdd875fc8073b5c2a2252a34202e7a7",
+    sha256: "b20d3a3150036432cf51d30aaf0aa02f96e4e21e167128d837a76cca2407d11b",
   },
 ];
 

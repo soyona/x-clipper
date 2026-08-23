@@ -1,32 +1,126 @@
 # X Article Clipper
 
-X Article Clipper 是一个本地优先的 X 稍后阅读工具：在碎片时间保存有价值的 Post 或 Article 完整快照，之后集中精读或转为创作素材。
+**Turn valuable X Posts and Articles into a private, searchable knowledge base—stored locally in your browser.**
 
-项目技术名称为 `x-clipper`。扩展不调用 X API、不上传内容，也不需要 API Key。正文和图片保存在浏览器扩展的本地 IndexedDB；视频和音频文件不保存。
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-源码仓库：[soyona/x-clipper](https://github.com/soyona/x-clipper)。当前项目已建立独立 Git 历史。
+X is one of the best places to discover early AI ideas, practical engineering lessons, and creator insights. But a bookmark is only useful if you can find and reuse it later.
 
-核心闭环是：`发现 Post/Article → 加入待读 → 本地精读 → 保存为素材 → 标记已使用`。阅读状态与素材状态独立，原文删除或修改不会覆盖首次快照。
+X Article Clipper helps you keep the signal you already spent time finding. Save a deliberate snapshot, return to it when you have time to focus, organize useful material with tags, and copy clean Markdown into your research or creative workflow.
 
-## 安装
+> Your bookmarks are not a knowledge base. Retrieval and reuse turn saved information into knowledge.
 
-1. 在 Chrome 打开 `chrome://extensions` 并开启开发者模式。
-2. 选择“加载已解压的扩展程序”，选中本项目目录。
-3. 打开 Post 或 Article 详情页，在当前主内容的 X Clipper 菜单中选择“加入待读”；Home、历史和作者页等列表 Card 不提供入口。
-4. 在 Side Panel 按未读/已读筛选并打开本地阅读器；需要复用时保存为素材。
+![X Article Clipper workflow from deliberate capture to local search and reuse](assets/marketing/x-clipper-walkthrough.gif)
 
-“作者”页底部的数据管理区域可手动导出完整 JSON 备份，并在本机或另一浏览器配置中合并恢复正文、图片和状态。
+## Why X Article Clipper
 
-扩展按钮不使用 Chrome 原生 Action Popup。Post 只保存当前作者当前 Post；引用 Post、回复、评论、线程以及视频/音频文件不在采集范围内。
+- **Find what mattered.** Search saved content and authors instead of scrolling through an ever-growing bookmark list.
+- **Build your own context.** Use tags and independent reading/material states to organize ideas around your work.
+- **Keep a durable local snapshot.** Saved text and images remain readable even if the original changes or disappears.
+- **Move from reading to creating.** Turn useful material into Markdown when it is time to research, write, or publish.
+- **Own the library.** Content stays in your browser's local IndexedDB and can be backed up and restored as JSON.
 
-## 开发
+No X API, API key, additional account, analytics, tracking, or developer-operated server is required.
+
+## Designed for
+
+- AI practitioners following fast-moving research and engineering discussions on X.
+- solo developers collecting product, technical, and growth lessons.
+- researchers and lifelong learners building a focused personal knowledge base.
+- writers and creators turning high-signal source material into original work.
+
+## The workflow
+
+```text
+Discover a valuable Post or Article
+              ↓
+         Save for later
+              ↓
+       Read the local snapshot
+              ↓
+      Save useful material + tags
+              ↓
+       Search, reuse, and mark used
+```
+
+Post and Article snapshots share one local content library. Reading state and material state remain independent, so something can be read without becoming material—or reused long after it was first read.
+
+## See the workflow
+
+### Find saved ideas by tag
+
+The value of a library appears when you can retrieve the right idea without scrolling through everything you saved.
+
+![Searching the local Materials library by tag](assets/marketing/screenshots/03-tag-search.png)
+
+### Read locally and reuse as Markdown
+
+Return to a distraction-free local snapshot, then copy clean Markdown when the source becomes useful for research or creation.
+
+![Local reader and Copy Markdown action](assets/marketing/screenshots/05-local-reader-markdown.png)
+
+## What you can do
+
+- Save the current Post or Article from its detail page.
+- Search the Read later and Materials collections.
+- Filter reading and material states and sort by date added or date published.
+- Tag material and mark it as used or unused.
+- Open a distraction-free local reading view.
+- Preview and copy Markdown for reuse.
+- Save Article authors for future discovery.
+- Export a complete local backup and merge it into another browser profile.
+- Use the interface in English or Simplified Chinese.
+
+## Install from source
+
+X Article Clipper is currently distributed as an unpacked Chrome extension. A Chrome Web Store version is not available yet.
+
+1. [Download the v1.1.1 installation package](https://github.com/soyona/x-clipper/releases/download/v1.1.1/x-article-clipper-v1.1.1.zip) and unzip it.
+2. Open `chrome://extensions` in Chrome.
+3. Enable **Developer mode**.
+4. Select **Load unpacked** and choose the unzipped `x-article-clipper-v1.1.1` folder.
+5. Open a supported X Post or Article detail page and use the X Clipper action next to Grok/Summarize.
+6. Open the extension's Side Panel to manage Read later, Materials, and Authors.
+
+The extension has no build step and no third-party runtime dependencies.
+
+Existing unpacked users should export a backup before upgrading and keep the existing extension folder path. Read the [upgrade instructions](release/INSTALL.md) before replacing files.
+
+## Current boundaries
+
+X Article Clipper intentionally favors deliberate capture over bulk collection.
+
+- It does **not** import or reorganize your existing X Bookmarks history.
+- It does **not** inject actions into Home, history, or author list cards; open the Post or Article detail page first.
+- A Post snapshot includes only the current author's current Post and its images—not quoted Posts, replies, comments, or an entire thread.
+- Video and audio files are not downloaded. A saved item can link back to X for playback.
+- Data is local to the browser profile unless you export and restore a backup.
+- X can change its web interface; please report compatibility problems with reproducible, privacy-safe evidence.
+
+## Privacy and ownership
+
+The extension processes content only after a user invokes an X Article Clipper action on a supported page. Saved content is not uploaded to the developer or a third-party service.
+
+Read the full [Privacy Policy](PRIVACY.md). X Article Clipper is an independent project and is not affiliated with, endorsed by, or sponsored by X Corp.
+
+## Feedback and contributions
+
+If this workflow matches how you learn or create from X, starring the repository helps other people discover it.
+
+- [Report a bug](https://github.com/soyona/x-clipper/issues/new?template=bug.yml)
+- [Suggest an improvement](https://github.com/soyona/x-clipper/issues/new?template=feature.yml)
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+Please never include cookies, authentication tokens, private messages, private account content, or a full-page X DOM dump in an issue.
+
+## Development
 
 ```bash
 npm test
 ```
 
-扩展不需要构建步骤或第三方依赖。`manifest.json` 是 Chrome 加载入口；`content.js` 负责页面采集，`markdown.js` 负责稳定的 Markdown 输出。
+`manifest.json` is the Chrome entry point. `content.js` owns user-invoked page capture, `content-db.js` owns local IndexedDB persistence, and `markdown.js` produces stable Markdown.
 
-## 隐私
+## License
 
-扩展仅在本地处理用户主动操作的 X 页面内容，不收集 Cookie、认证令牌或账号密码，不向开发者或第三方服务器传输内容。完整说明见 [PRIVACY.md](PRIVACY.md)。
+[MIT](LICENSE) © 2026 soyona and contributors.

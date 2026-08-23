@@ -1,6 +1,7 @@
 const button = document.querySelector("#import");
 const status = document.querySelector("#status");
-const DEFAULT_BUTTON_LABEL = button.textContent;
+const i18n = globalThis.XClipperI18n;
+const t = (key, values) => i18n.t(key, values);
 
 function setStatus(message, kind = "") {
   status.textContent = message;
@@ -15,25 +16,27 @@ async function copyMarkdown(capture) {
 
 button.addEventListener("click", async () => {
   button.disabled = true;
-  button.textContent = "Preparing…";
+  button.textContent = t("preparing");
   button.setAttribute("aria-busy", "true");
-  setStatus("Reading the current X page…");
+  setStatus(t("readingCurrentPage"));
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !/^https:\/\/(?:www\.)?(?:x|twitter)\.com\//u.test(tab.url || "")) {
-      throw new Error("Open a post or Article to extract content.");
+      throw new Error(t("openPostOrArticle"));
     }
     const capture = await chrome.tabs.sendMessage(tab.id, { type: "capture-x" });
     if (capture?.error) throw new Error(capture.error);
-    if (!capture?.content) throw new Error("No content found. Please wait for the page to finish loading.");
+    if (!capture?.content) throw new Error(t("noContentFound"));
     await copyMarkdown(capture);
-    setStatus("Markdown copied.");
+    setStatus(t("markdownCopiedPeriod"));
     window.close();
   } catch (error) {
-    setStatus(error.message || "Failed to read the page. Please refresh X and try again.", "error");
+    setStatus(i18n.localizeError(error.message, "pageReadFailed"), "error");
   } finally {
     button.disabled = false;
-    button.textContent = DEFAULT_BUTTON_LABEL;
+    button.textContent = t("extractAndCopy");
     button.removeAttribute("aria-busy");
   }
 });
+
+i18n.init();

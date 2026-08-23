@@ -1,5 +1,7 @@
 const view = document.querySelector("#view");
 const status = document.querySelector("#status");
+const i18n = globalThis.XClipperI18n;
+const t = (key, values) => i18n.t(key, values);
 
 const state = {
   page: "readingList",
@@ -26,9 +28,9 @@ function escapeHtml(value) {
 }
 
 function formatDate(value) {
-  if (!value) return "未记录";
+  if (!value) return t("notRecorded");
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? String(value) : `${date.getMonth() + 1}/${date.getDate()}`;
+  return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat(i18n.getLocale(), { month: "numeric", day: "numeric" }).format(date);
 }
 
 function normalizedSourceUrl(value) {
@@ -141,12 +143,12 @@ function menuItemIcon(icon) {
 }
 
 function sortControl(collection, sortBy, open) {
-  const label = sortBy === "published" ? "发布时间" : "加入时间";
-  const options = [["added", "加入时间"], ["published", "发布时间"]]
-    .map(([key, text]) => `<button class="${sortBy === key ? "is-selected" : ""}" data-action="${collection}-sort-select" data-sort="${key}" type="button" role="menuitemradio" aria-checked="${sortBy === key}">${text}</button>`)
+  const label = sortBy === "published" ? t("publishedTime") : t("addedTime");
+  const options = [["added", t("addedTime")], ["published", t("publishedTime")]]
+    .map(([key, text]) => `<button class="${sortBy === key ? "is-selected" : ""}" data-action="${collection}-sort-select" data-sort="${key}" type="button" role="menuitemradio" aria-checked="${sortBy === key}">${escapeHtml(text)}</button>`)
     .join("");
-  const menu = open ? `<div class="asset-menu sort-menu" role="menu" aria-label="排序方式">${options}</div>` : "";
-  return `<div class="sort-menu-anchor"><button class="sort-trigger" data-action="${collection}-sort-menu" type="button" aria-label="排序方式：${label}" aria-haspopup="menu" aria-expanded="${open}">排序：${label}</button>${menu}</div>`;
+  const menu = open ? `<div class="asset-menu sort-menu" role="menu" aria-label="${escapeHtml(t("sortMethod"))}">${options}</div>` : "";
+  return `<div class="sort-menu-anchor"><button class="sort-trigger" data-action="${collection}-sort-menu" type="button" aria-label="${escapeHtml(t("sortBy", { label }))}" aria-haspopup="menu" aria-expanded="${open}">${escapeHtml(t("sortBy", { label }))}</button>${menu}</div>`;
 }
 
 function renderArticleCard(item, { action = "", href = "", tags = "" } = {}) {
@@ -166,8 +168,8 @@ function renderArticleCard(item, { action = "", href = "", tags = "" } = {}) {
     ? `<a class="${mediaClass}" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${mediaContent}</a>`
     : `<span class="${mediaClass}">${mediaContent}</span>`;
   const title = href
-    ? `<a class="article-card-title" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(item.title || "Untitled Article")}</a>`
-    : `<strong class="article-card-title">${escapeHtml(item.title || "Untitled Article")}</strong>`;
+    ? `<a class="article-card-title" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(item.title || t("untitledArticle"))}</a>`
+    : `<strong class="article-card-title">${escapeHtml(item.title || t("untitledArticle"))}</strong>`;
   const content = `${media}<span class="article-card-body">${title}${tags}</span>`;
   return action
     ? `<button class="article-card" data-action="${escapeHtml(action)}" data-id="${escapeHtml(item.id)}" type="button">${content}</button>`
@@ -175,20 +177,21 @@ function renderArticleCard(item, { action = "", href = "", tags = "" } = {}) {
 }
 
 function readingItem(item) {
-  const authorName = item.authorName || item.authorHandle || "未知作者";
+  const authorName = item.authorName || item.authorHandle || t("unknownAuthor");
   const profileUrl = authorProfileUrl(item.authorHandle);
   const avatar = item.authorAvatarUrl ? `<img src="${escapeHtml(item.authorAvatarUrl)}" alt="" />` : escapeHtml(avatarLabel(item));
   const firstImage = (item.blocks || []).find((block) => block.type === "image");
   const imageCount = (item.blocks || []).filter((block) => block.type === "image").length;
   const coverUrl = firstImage?.imageId ? "" : firstImage?.url || item.coverImageUrl;
   const cover = firstImage || item.coverImageUrl
-    ? `<span class="article-card-media post-card-media"><img ${firstImage?.imageId ? `data-local-image="${escapeHtml(firstImage.imageId)}"` : `src="${escapeHtml(coverUrl)}"`} alt="" />${imageCount > 1 ? `<span class="article-card-badge">共 ${imageCount} 张</span>` : ""}</span>`
+    ? `<span class="article-card-media post-card-media"><img ${firstImage?.imageId ? `data-local-image="${escapeHtml(firstImage.imageId)}"` : `src="${escapeHtml(coverUrl)}"`} alt="" />${imageCount > 1 ? `<span class="article-card-badge">${escapeHtml(t("imageCount", { count: imageCount }))}</span>` : ""}</span>`
     : "";
   const body = item.contentType === "post"
-    ? `<button class="post-card-copy" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button"><span class="post-card-text">${escapeHtml(item.previewExcerpt || item.markdown || "")}</span>${cover}${item.mediaNotice === "video" ? '<span class="post-media-notice">含视频，仅原文可播放</span>' : ""}</button>`
+    ? `<button class="post-card-copy" data-action="reading-open" data-id="${escapeHtml(item.id)}" type="button"><span class="post-card-text">${escapeHtml(item.previewExcerpt || item.markdown || "")}</span>${cover}${item.mediaNotice === "video" ? `<span class="post-media-notice">${escapeHtml(t("videoOriginalOnly"))}</span>` : ""}</button>`
     : renderArticleCard(item, { action: "reading-open" });
-  const menu = state.readingMenu === item.id ? `<div class="asset-menu ${state.readingMenuPlacement === "up" ? "is-up" : ""}" role="menu"><button class="is-destructive" data-action="reading-delete" data-id="${escapeHtml(item.id)}" type="button" role="menuitem">${menuItemIcon(deleteIcon())}<span>删除待读内容</span></button></div>` : "";
-  return `<article class="article-post ${item.readState === "read" ? "is-read" : ""}" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="reading-menu" data-id="${escapeHtml(item.id)}" type="button" aria-label="待读内容操作" aria-expanded="${state.readingMenu === item.id}">${moreIcon()}</button>${menu}</div></div>${body}<footer class="article-engagement"><a class="reading-added-at" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">打开原文</a><button class="article-inbox-remove" data-action="reading-toggle" data-id="${escapeHtml(item.id)}" data-read-state="${escapeHtml(item.readState)}" type="button" aria-label="${item.readState === "read" ? "标记为未读" : "标记为已读"}" title="${item.readState === "read" ? "标记为未读" : "标记为已读"}">${readingRemoveIcon()}</button></footer></div></article>`;
+  const menu = state.readingMenu === item.id ? `<div class="asset-menu ${state.readingMenuPlacement === "up" ? "is-up" : ""}" role="menu"><button class="is-destructive" data-action="reading-delete" data-id="${escapeHtml(item.id)}" type="button" role="menuitem">${menuItemIcon(deleteIcon())}<span>${escapeHtml(t("deleteReadingItem"))}</span></button></div>` : "";
+  const readAction = item.readState === "read" ? t("markUnread") : t("markRead");
+  return `<article class="article-post ${item.readState === "read" ? "is-read" : ""}" data-source-url="${escapeHtml(normalizedSourceUrl(item.sourceUrl))}"><a class="article-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(t("openProfile", { name: authorName }))}">${avatar}</a><div class="article-content"><div class="article-author"><strong>${escapeHtml(authorName)}${verifiedBadge(item.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(item.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(item.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="reading-menu" data-id="${escapeHtml(item.id)}" type="button" aria-label="${escapeHtml(t("readingItemActions"))}" aria-expanded="${state.readingMenu === item.id}">${moreIcon()}</button>${menu}</div></div>${body}<footer class="article-engagement"><a class="reading-added-at" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t("openOriginal"))}</a><button class="article-inbox-remove" data-action="reading-toggle" data-id="${escapeHtml(item.id)}" data-read-state="${escapeHtml(item.readState)}" type="button" aria-label="${escapeHtml(readAction)}" title="${escapeHtml(readAction)}">${readingRemoveIcon()}</button></footer></div></article>`;
 }
 
 async function hydrateLocalImages() {
@@ -210,12 +213,12 @@ function renderReadingList() {
     source.filter((item) => (state.readingFilter === "all" || item.readState === state.readingFilter) && (!query || `${item.title} ${item.previewExcerpt} ${item.authorName} ${item.authorHandle}`.toLowerCase().includes(query))),
     { collection: "reading", sortBy: state.readingSort },
   );
-  const tabs = [["unread", "未读"], ["read", "已读"], ["all", "全部"]].map(([key, label]) => `<button class="${state.readingFilter === key ? "is-active" : ""}" data-reading-filter="${key}" type="button">${label}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
-  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">搜索待读</span>${searchIcon()}<input data-reading-search type="search" placeholder="搜索内容、作者或 @handle" value="${escapeHtml(state.readingQuery)}" aria-label="搜索待读"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="阅读状态">${tabs}</div>${sortControl("reading", state.readingSort, state.readingSortMenu)}</div></div>`;
+  const tabs = [["unread", t("unread")], ["read", t("read")], ["all", t("all")]].map(([key, label]) => `<button class="${state.readingFilter === key ? "is-active" : ""}" data-reading-filter="${key}" type="button">${escapeHtml(label)}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
+  const search = `<div class="reading-filters"><label class="panel-search"><span class="sr-only">${escapeHtml(t("searchReading"))}</span>${searchIcon()}<input data-reading-search type="search" placeholder="${escapeHtml(t("searchReadingPlaceholder"))}" value="${escapeHtml(state.readingQuery)}" aria-label="${escapeHtml(t("searchReading"))}"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="${escapeHtml(t("readingStatus"))}">${tabs}</div>${sortControl("reading", state.readingSort, state.readingSortMenu)}</div></div>`;
   const dialogItem = state.data.readingList.find((item) => item.id === state.readingDialog);
-  const dialogDescription = dialogItem?.materialState === "none" ? "删除后无法恢复。" : "此内容也会从素材库删除，且无法恢复。";
-  const dialog = dialogItem ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="reading-dialog-title"><h2 id="reading-dialog-title">删除待读内容？</h2><p>${dialogDescription}</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="reading-dialog-cancel" type="button">取消</button><button class="danger-button" data-action="reading-dialog-confirm" data-id="${escapeHtml(dialogItem.id)}" type="button">删除</button></div></section></div>` : "";
-  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : '<p class="empty">这里还没有内容。请在 X 的 Post 或 Article 菜单中加入待读。</p>'}${dialog}`;
+  const dialogDescription = dialogItem?.materialState === "none" ? t("deleteIrreversible") : t("deleteAlsoMaterial");
+  const dialog = dialogItem ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="reading-dialog-title"><h2 id="reading-dialog-title">${escapeHtml(t("deleteReadingTitle"))}</h2><p>${escapeHtml(dialogDescription)}</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="reading-dialog-cancel" type="button">${escapeHtml(t("cancel"))}</button><button class="danger-button" data-action="reading-dialog-confirm" data-id="${escapeHtml(dialogItem.id)}" type="button">${escapeHtml(t("delete"))}</button></div></section></div>` : "";
+  view.innerHTML = `${search}${items.length ? items.map(readingItem).join("") : `<p class="empty">${escapeHtml(t("emptyReading"))}</p>`}${dialog}`;
   hydrateLocalImages().catch(() => {});
 }
 
@@ -224,21 +227,22 @@ function authorItem(author) {
   const profileUrl = `${authorProfileUrl(author.handle)}/articles`;
   const avatar = author.authorAvatarUrl ? `<img src="${escapeHtml(author.authorAvatarUrl)}" alt="" />` : escapeHtml(avatarLabel(author));
   const description = author.description ? `<p class="author-description">${escapeHtml(author.description)}</p>` : "";
-  return `<article class="author-cell"><a class="author-profile-link" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(name)} 的 Articles"><div class="author-avatar" aria-hidden="true">${avatar}</div><div class="author-content"><div class="author-identity"><strong>${escapeHtml(name)}${verifiedBadge(author.authorVerificationType)}</strong><span class="author-handle">@${escapeHtml(author.handle.replace(/^@/u, ""))}</span></div>${description}</div></a><button class="author-remove-button" data-action="author-remove" data-handle="${escapeHtml(author.handle)}" type="button">取消收藏</button></article>`;
+  return `<article class="author-cell"><a class="author-profile-link" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(t("openArticles", { name }))}"><div class="author-avatar" aria-hidden="true">${avatar}</div><div class="author-content"><div class="author-identity"><strong>${escapeHtml(name)}${verifiedBadge(author.authorVerificationType)}</strong><span class="author-handle">@${escapeHtml(author.handle.replace(/^@/u, ""))}</span></div>${description}</div></a><button class="author-remove-button" data-action="author-remove" data-handle="${escapeHtml(author.handle)}" type="button">${escapeHtml(t("unfollow"))}</button></article>`;
 }
 
 function renderAuthors() {
   const authors = state.data.authors.length
     ? state.data.authors.map(authorItem).join("")
-    : '<p class="empty">还没有收藏作者。阅读优质 Article 时，可以从 X Article Clipper 菜单收藏作者。</p>';
-  view.innerHTML = `${authors}<section class="data-management" aria-labelledby="data-management-title"><div><strong id="data-management-title">数据管理</strong><p>备份与恢复此设备上的正文、图片和状态。</p></div><div class="data-management-actions"><button class="secondary-button" data-action="backup-export" type="button">导出备份</button><button class="secondary-button" data-action="backup-import" type="button">恢复备份</button><input data-backup-file type="file" accept="application/json,.json" hidden></div></section>`;
+    : `<p class="empty">${escapeHtml(t("emptyAuthors"))}</p>`;
+  const locale = i18n.getLocale();
+  view.innerHTML = `${authors}<section class="language-management" aria-labelledby="language-management-title"><div><strong id="language-management-title">${escapeHtml(t("language"))}</strong><p>${escapeHtml(t("languageDescription"))}</p></div><select class="language-select" data-language-select aria-label="${escapeHtml(t("language"))}"><option value="en"${locale === "en" ? " selected" : ""}>English</option><option value="zh-CN"${locale === "zh-CN" ? " selected" : ""}>简体中文</option></select></section><section class="data-management" aria-labelledby="data-management-title"><div><strong id="data-management-title">${escapeHtml(t("dataManagement"))}</strong><p>${escapeHtml(t("dataManagementDescription"))}</p></div><div class="data-management-actions"><button class="secondary-button" data-action="backup-export" type="button">${escapeHtml(t("exportBackup"))}</button><button class="secondary-button" data-action="backup-import" type="button">${escapeHtml(t("restoreBackup"))}</button><input data-backup-file type="file" accept="application/json,.json" hidden></div></section>`;
 }
 
 function blobAsDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
-    reader.addEventListener("error", () => reject(reader.error || new Error("无法读取本地图片。")), { once: true });
+    reader.addEventListener("error", () => reject(reader.error || new Error(t("localImageReadFailed"))), { once: true });
     reader.readAsDataURL(blob);
   });
 }
@@ -257,11 +261,11 @@ async function exportBackup() {
   link.download = `x-clipper-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
-  setStatus(`备份已导出 · ${data.items.length} 条内容`);
+  setStatus(t("backupExported", { count: data.items.length }));
 }
 
 function imageFromBackup(value) {
-  if (!value?.id || !/^data:[^;,]+;base64,/u.test(value.data || "")) throw new Error("备份中的图片数据无效。" );
+  if (!value?.id || !/^data:[^;,]+;base64,/u.test(value.data || "")) throw new Error(t("backupImageInvalid"));
   const encoded = value.data.slice(value.data.indexOf(",") + 1);
   const binary = atob(encoded);
   const bytes = new Uint8Array(binary.length);
@@ -271,9 +275,9 @@ function imageFromBackup(value) {
 }
 
 async function restoreBackup(file) {
-  if (!file || file.size > 1024 * 1024 * 1024) throw new Error("备份文件无效或超过 1 GB。" );
+  if (!file || file.size > 1024 * 1024 * 1024) throw new Error(t("backupFileInvalid"));
   const payload = JSON.parse(await file.text());
-  if (payload?.format !== "x-clipper-backup" || payload?.version !== 1 || payload?.schemaVersion !== 2) throw new Error("这不是受支持的 X Clipper 备份。" );
+  if (payload?.format !== "x-clipper-backup" || payload?.version !== 1 || payload?.schemaVersion !== 2) throw new Error(t("backupUnsupported"));
   const result = await globalThis.XClipperContentDatabase.mergeBackupData({
     schemaVersion: 2,
     items: Array.isArray(payload.items) ? payload.items : [],
@@ -283,19 +287,19 @@ async function restoreBackup(file) {
   await chrome.runtime.sendMessage({ type: "content-store-changed" }).catch(() => {});
   await loadData();
   render();
-  setStatus(`恢复完成 · 新增 ${result.items} 条内容、${result.images} 张图片`);
+  setStatus(t("restoreCompleted", { items: result.items, images: result.images }));
 }
 
 function assetItem(asset) {
-  const authorName = asset.authorName || asset.authorHandle || "未知作者";
+  const authorName = asset.authorName || asset.authorHandle || t("unknownAuthor");
   const profileUrl = authorProfileUrl(asset.authorHandle);
   const avatar = asset.authorAvatarUrl ? `<img src="${escapeHtml(asset.authorAvatarUrl)}" alt="" />` : escapeHtml(avatarLabel(asset));
-  const tags = (asset.tags || []).map((tag) => `<span class="asset-tag"><span>${escapeHtml(tag)}</span><button data-action="asset-remove-tag" data-id="${escapeHtml(asset.id)}" data-tag="${escapeHtml(tag)}" type="button" aria-label="删除标签 ${escapeHtml(tag)}">×</button></span>`).join("");
-  const tagEditor = state.assetTagEditor === asset.id ? `<div class="asset-tag-editor asset-menu-editor"><input data-asset-tag-input data-id="${escapeHtml(asset.id)}" type="text" placeholder="输入标签后回车" aria-label="添加标签"><button class="asset-icon-button" data-action="asset-add-tag" data-id="${escapeHtml(asset.id)}" type="button" aria-label="确认添加标签">${addIcon()}</button></div>` : "";
+  const tags = (asset.tags || []).map((tag) => `<span class="asset-tag"><span>${escapeHtml(tag)}</span><button data-action="asset-remove-tag" data-id="${escapeHtml(asset.id)}" data-tag="${escapeHtml(tag)}" type="button" aria-label="${escapeHtml(t("removeTag", { tag }))}">×</button></span>`).join("");
+  const tagEditor = state.assetTagEditor === asset.id ? `<div class="asset-tag-editor asset-menu-editor"><input data-asset-tag-input data-id="${escapeHtml(asset.id)}" type="text" placeholder="${escapeHtml(t("addTagPlaceholder"))}" aria-label="${escapeHtml(t("addTag"))}"><button class="asset-icon-button" data-action="asset-add-tag" data-id="${escapeHtml(asset.id)}" type="button" aria-label="${escapeHtml(t("confirmAddTag"))}">${addIcon()}</button></div>` : "";
   const editorOpen = state.assetTagEditor === asset.id;
-  const menu = state.assetMenu === asset.id ? `<div class="asset-menu ${state.assetMenuPlacement === "up" ? "is-up" : ""}" ${editorOpen ? 'role="dialog" aria-label="素材编辑"' : 'role="menu"'}><a href="${escapeHtml(asset.sourceUrl)}" target="_blank" rel="noreferrer" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(openOriginalIcon())}<span>打开原文</span></a><button data-action="asset-tag-editor" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(editTagIcon())}<span>编辑标签</span></button>${tagEditor}<button data-action="asset-toggle-used" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(usageStatusIcon(asset.usageStatus !== "used"))}<span>${asset.usageStatus === "used" ? "标记为未使用" : "标记为已使用"}</span></button><button class="is-destructive" data-action="asset-delete" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(deleteIcon())}<span>删除素材</span></button></div>` : "";
-  const card = renderArticleCard(asset, { href: asset.sourceUrl, tags: tags ? `<span class="asset-tags-row" aria-label="标签">${tags}</span>` : "" });
-  return `<article class="article-post asset-post"><a class="article-avatar asset-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(authorName)} 的 X 主页">${avatar}</a><div class="article-content"><div class="article-author asset-author"><strong>${escapeHtml(authorName)}${verifiedBadge(asset.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(asset.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(asset.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="asset-menu" data-id="${escapeHtml(asset.id)}" type="button" aria-label="素材操作" aria-expanded="${state.assetMenu === asset.id}">${moreIcon()}</button>${menu}</div></div>${card}<footer class="asset-footer"><span class="asset-usage-status ${asset.usageStatus === "used" ? "is-used" : ""}">${asset.usageStatus === "used" ? "已使用" : "未使用"}</span><button class="asset-preview-action" data-action="asset-preview" data-id="${escapeHtml(asset.id)}" type="button">${previewMarkdownIcon()}<span>预览 Markdown</span></button></footer></div></article>`;
+  const menu = state.assetMenu === asset.id ? `<div class="asset-menu ${state.assetMenuPlacement === "up" ? "is-up" : ""}" ${editorOpen ? `role="dialog" aria-label="${escapeHtml(t("materialEditor"))}"` : 'role="menu"'}><a href="${escapeHtml(asset.sourceUrl)}" target="_blank" rel="noreferrer" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(openOriginalIcon())}<span>${escapeHtml(t("openOriginal"))}</span></a><button data-action="asset-tag-editor" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(editTagIcon())}<span>${escapeHtml(t("editTags"))}</span></button>${tagEditor}<button data-action="asset-toggle-used" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(usageStatusIcon(asset.usageStatus !== "used"))}<span>${escapeHtml(asset.usageStatus === "used" ? t("markUnused") : t("markUsed"))}</span></button><button class="is-destructive" data-action="asset-delete" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(deleteIcon())}<span>${escapeHtml(t("deleteMaterial"))}</span></button></div>` : "";
+  const card = renderArticleCard(asset, { href: asset.sourceUrl, tags: tags ? `<span class="asset-tags-row" aria-label="${escapeHtml(t("tags"))}">${tags}</span>` : "" });
+  return `<article class="article-post asset-post"><a class="article-avatar asset-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(t("openProfile", { name: authorName }))}">${avatar}</a><div class="article-content"><div class="article-author asset-author"><strong>${escapeHtml(authorName)}${verifiedBadge(asset.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(asset.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(asset.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="asset-menu" data-id="${escapeHtml(asset.id)}" type="button" aria-label="${escapeHtml(t("materialActions"))}" aria-expanded="${state.assetMenu === asset.id}">${moreIcon()}</button>${menu}</div></div>${card}<footer class="asset-footer"><span class="asset-usage-status ${asset.usageStatus === "used" ? "is-used" : ""}">${escapeHtml(asset.usageStatus === "used" ? t("used") : t("unused"))}</span><button class="asset-preview-action" data-action="asset-preview" data-id="${escapeHtml(asset.id)}" type="button">${previewMarkdownIcon()}<span>${escapeHtml(t("previewMarkdown"))}</span></button></footer></div></article>`;
 }
 
 function renderAssets() {
@@ -309,10 +313,10 @@ function renderAssets() {
     state.data.assets.filter((asset) => (state.assetFilter === "all" || asset.usageStatus === state.assetFilter) && (!query || `${asset.title} ${asset.authorName} ${asset.authorHandle} ${(asset.tags || []).join(" ")}`.toLowerCase().includes(query))),
     { collection: "material", sortBy: state.assetSort },
   );
-  const tabs = [["all", "全部"], ["unused", "未使用"], ["used", "已使用"]].map(([key, label]) => `<button class="${state.assetFilter === key ? "is-active" : ""}" data-filter="${key}" type="button">${label}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
+  const tabs = [["all", t("all")], ["unused", t("unused")], ["used", t("used")]].map(([key, label]) => `<button class="${state.assetFilter === key ? "is-active" : ""}" data-filter="${key}" type="button">${escapeHtml(label)}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
   const dialogAsset = state.data.assets.find((asset) => asset.id === state.assetDialog);
-  const dialog = dialogAsset ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="asset-dialog-title"><h2 id="asset-dialog-title">删除素材？</h2><p>删除后无法恢复。</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="asset-dialog-cancel" type="button">取消</button><button class="danger-button" data-action="asset-dialog-confirm" data-id="${escapeHtml(dialogAsset.id)}" type="button">删除</button></div></section></div>` : "";
-  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">搜索素材</span>${searchIcon()}<input data-asset-search type="search" placeholder="搜索标题、作者、@handle 或标签" value="${escapeHtml(state.assetQuery)}" aria-label="搜索素材"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="素材分类">${tabs}</div>${sortControl("asset", state.assetSort, state.assetSortMenu)}</div></div>${assets.length ? assets.map(assetItem).join("") : '<p class="empty">还没有素材。请在 Article 原文页保存为素材。</p>'}${dialog}`;
+  const dialog = dialogAsset ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="asset-dialog-title"><h2 id="asset-dialog-title">${escapeHtml(t("deleteMaterialTitle"))}</h2><p>${escapeHtml(t("deleteIrreversible"))}</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="asset-dialog-cancel" type="button">${escapeHtml(t("cancel"))}</button><button class="danger-button" data-action="asset-dialog-confirm" data-id="${escapeHtml(dialogAsset.id)}" type="button">${escapeHtml(t("delete"))}</button></div></section></div>` : "";
+  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">${escapeHtml(t("searchMaterials"))}</span>${searchIcon()}<input data-asset-search type="search" placeholder="${escapeHtml(t("searchMaterialsPlaceholder"))}" value="${escapeHtml(state.assetQuery)}" aria-label="${escapeHtml(t("searchMaterials"))}"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="${escapeHtml(t("materialCategory"))}">${tabs}</div>${sortControl("asset", state.assetSort, state.assetSortMenu)}</div></div>${assets.length ? assets.map(assetItem).join("") : `<p class="empty">${escapeHtml(t("emptyMaterials"))}</p>`}${dialog}`;
   hydrateLocalImages().catch(() => {});
 }
 
@@ -322,7 +326,7 @@ function render() {
     tab.classList.toggle("is-active", active);
     tab.toggleAttribute("aria-current", active);
   });
-  document.title = `${{ readingList: "待读", assets: "素材库", authors: "作者" }[state.page]} · X Article Clipper`;
+  document.title = `${{ readingList: t("readingList"), assets: t("materials"), authors: t("authors") }[state.page]} · X Article Clipper`;
   if (state.page === "readingList") renderReadingList();
   else if (state.page === "authors") renderAuthors();
   else renderAssets();
@@ -372,7 +376,7 @@ async function handleAction(action, target) {
   if (action === "reading-dialog-confirm") {
     await send({ type: "remove-content-item", itemId: target.dataset.id });
     state.readingDialog = null;
-    setStatus("待读内容已删除");
+    setStatus(t("readingDeleted"));
     return;
   }
   if (action === "reading-delete") {
@@ -383,12 +387,12 @@ async function handleAction(action, target) {
   }
   if (action === "reading-toggle") {
     await send({ type: "update-content-item", itemId: target.dataset.id, patch: { readState: target.dataset.readState === "read" ? "unread" : "read" } });
-    setStatus(target.dataset.readState === "read" ? "已标记为未读" : "已标记为已读");
+    setStatus(target.dataset.readState === "read" ? t("markedUnread") : t("markedRead"));
     return;
   }
   if (action === "author-remove") {
     await send({ type: "remove-content-author", handle: target.dataset.handle });
-    setStatus("已取消收藏作者");
+    setStatus(t("authorRemoved"));
     return;
   }
   const asset = state.data.assets.find((item) => item.id === target.dataset.id);
@@ -417,7 +421,7 @@ async function handleAction(action, target) {
     const selected = state.data.assets.find((item) => item.id === target.dataset.id);
     if (selected) await send({ type: "update-content-item", itemId: selected.id, patch: { materialState: "none" } });
     state.assetDialog = null;
-    setStatus("素材已删除");
+    setStatus(t("materialDeleted"));
     return;
   }
   if (!asset) return;
@@ -435,7 +439,7 @@ async function handleAction(action, target) {
     const input = target.closest(".asset-tag-editor")?.querySelector("[data-asset-tag-input]");
     const tag = input?.value.trim();
     if (!tag) { input?.focus(); return; }
-    if ((asset.tags || []).some((value) => value.toLowerCase() === tag.toLowerCase())) { setStatus("标签已存在"); return; }
+    if ((asset.tags || []).some((value) => value.toLowerCase() === tag.toLowerCase())) { setStatus(t("tagExists")); return; }
     await updateAsset(asset, { tags: [...(asset.tags || []), tag] });
     state.assetTagEditor = null;
     return;
@@ -463,7 +467,7 @@ document.addEventListener("click", async (event) => {
     return;
   }
   try { await handleAction(action.dataset.action, action); }
-  catch (error) { setStatus(error.message || "操作失败", "error"); }
+  catch (error) { setStatus(i18n.localizeError(error.message), "error"); }
 });
 
 view.addEventListener("input", (event) => {
@@ -484,10 +488,14 @@ view.addEventListener("compositionstart", (event) => {
 });
 
 view.addEventListener("change", (event) => {
+  if (event.target.matches("[data-language-select]")) {
+    i18n.setLocale(event.target.value).catch((error) => setStatus(i18n.localizeError(error.message), "error"));
+    return;
+  }
   if (!event.target.matches("[data-backup-file]")) return;
   const file = event.target.files?.[0];
   event.target.value = "";
-  restoreBackup(file).catch((error) => setStatus(error.message || "恢复失败", "error"));
+  restoreBackup(file).catch((error) => setStatus(i18n.localizeError(error.message, "restoreFailed"), "error"));
 });
 
 view.addEventListener("compositionend", (event) => {
@@ -499,7 +507,7 @@ view.addEventListener("compositionend", (event) => {
 view.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || !event.target.matches("[data-asset-tag-input]")) return;
   event.preventDefault();
-  handleAction("asset-add-tag", event.target.closest(".asset-tag-editor")?.querySelector("[data-action='asset-add-tag']")).catch((error) => setStatus(error.message || "操作失败", "error"));
+  handleAction("asset-add-tag", event.target.closest(".asset-tag-editor")?.querySelector("[data-action='asset-add-tag']")).catch((error) => setStatus(i18n.localizeError(error.message), "error"));
 });
 
 document.addEventListener("keydown", (event) => {
@@ -522,4 +530,8 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-loadData().then(render).catch((error) => setStatus(error.message || "无法加载本地数据", "error"));
+i18n.subscribe(render);
+i18n.init()
+  .then(loadData)
+  .then(render)
+  .catch((error) => setStatus(i18n.localizeError(error.message, "loadFailed"), "error"));
