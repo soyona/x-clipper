@@ -308,12 +308,15 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.doesNotMatch(script, /article-card-excerpt/u);
   assert.match(script, /function renderArticleCard\(item,/u);
   assert.match(script, /renderArticleCard\(item, \{ action: "reading-open" \}\)/u);
-  assert.match(script, /renderArticleCard\(asset, \{ href: asset\.sourceUrl,/u);
+  assert.match(script, /asset\.contentType === "post"/u);
+  assert.match(script, /post-card-copy asset-post-card/u);
+  assert.match(script, /renderArticleCard\(asset, \{ href: asset\.sourceUrl, tags: tagRow \}\)/u);
   assert.doesNotMatch(script, /article-card-button|asset-card-media|asset-card-body/u);
   assert.match(script, /const coverUrl = item\.coverImageUrl \|\| coverBlock\?\.url \|\| ""/u);
   assert.match(css, /\.article-card-media img \{[^}]*object-fit: contain/u);
   assert.match(css, /\.article-card:is\(button\) \{[^}]*appearance: none/u);
   assert.match(css, /\.post-card-text[^}]*-webkit-line-clamp: 4/u);
+  assert.match(css, /\.asset-post-card \{ margin-top: 8px; \}/u);
   assert.match(script, /format: "x-clipper-backup", version: 1/u);
   assert.match(script, /data-action="backup-export"/u);
   assert.match(script, /data-action="backup-import"/u);
