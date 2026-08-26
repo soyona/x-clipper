@@ -5,7 +5,7 @@
     en: {
       readingList: "Read later", materials: "Materials", authors: "Authors", workspace: "X Article Clipper workspace",
       workspaceNavigation: "Workspace navigation", notRecorded: "Not recorded", unknownAuthor: "Unknown author",
-      addedTime: "Date added", publishedTime: "Date published", sortMethod: "Sort options", sortBy: "Sort: {label}",
+      addedTime: "Date added", publishedTime: "Date published", sortMethod: "Sort options", sortBy: "Sort: {label}", sortByMenuTitle: "Sort by",
       untitledArticle: "Untitled Article", imageCount: "{count} images", videoOriginalOnly: "Contains video. Play it on X.",
       deleteReadingItem: "Delete saved item", openProfile: "Open {name}'s X profile", readingItemActions: "Saved item actions",
       openOriginal: "Open original", markUnread: "Mark as unread", markRead: "Mark as read",
@@ -62,7 +62,7 @@
     "zh-CN": {
       readingList: "待读", materials: "素材库", authors: "作者", workspace: "X Article Clipper Article 工作区",
       workspaceNavigation: "Article 工作区导航", notRecorded: "未记录", unknownAuthor: "未知作者",
-      addedTime: "加入时间", publishedTime: "发布时间", sortMethod: "排序方式", sortBy: "排序：{label}",
+      addedTime: "加入时间", publishedTime: "发布时间", sortMethod: "排序方式", sortBy: "排序：{label}", sortByMenuTitle: "排序方式",
       untitledArticle: "未命名 Article", imageCount: "共 {count} 张", videoOriginalOnly: "含视频，仅原文可播放",
       deleteReadingItem: "删除待读内容", openProfile: "打开 {name} 的 X 主页", readingItemActions: "待读内容操作",
       openOriginal: "打开原文", markUnread: "标记为未读", markRead: "标记为已读",

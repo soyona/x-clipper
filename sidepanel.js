@@ -142,13 +142,16 @@ function menuItemIcon(icon) {
   return `<span class="asset-menu-item-icon" aria-hidden="true">${icon}</span>`;
 }
 
-function sortControl(collection, sortBy, open) {
+function sortControl(collection, sortBy, open, variant = "compact") {
   const label = sortBy === "published" ? t("publishedTime") : t("addedTime");
   const options = [["added", t("addedTime")], ["published", t("publishedTime")]]
     .map(([key, text]) => `<button class="${sortBy === key ? "is-selected" : ""}" data-action="${collection}-sort-select" data-sort="${key}" type="button" role="menuitemradio" aria-checked="${sortBy === key}">${escapeHtml(text)}</button>`)
     .join("");
-  const menu = open ? `<div class="asset-menu sort-menu" role="menu" aria-label="${escapeHtml(t("sortMethod"))}">${options}</div>` : "";
-  return `<div class="sort-menu-anchor"><button class="sort-trigger" data-action="${collection}-sort-menu" type="button" aria-label="${escapeHtml(t("sortBy", { label }))}" aria-haspopup="menu" aria-expanded="${open}">${escapeHtml(t("sortBy", { label }))}</button>${menu}</div>`;
+  const xStyle = variant === "x";
+  const menu = open
+    ? `<div class="asset-menu sort-menu${xStyle ? " sort-menu--x" : ""}" role="menu" aria-label="${escapeHtml(t("sortMethod"))}">${xStyle ? `<div class="sort-menu-title">${escapeHtml(t("sortByMenuTitle"))}</div>` : ""}${options}</div>`
+    : "";
+  return `<div class="sort-menu-anchor"><button class="sort-trigger${xStyle ? " sort-trigger--x" : ""}" data-action="${collection}-sort-menu" type="button" aria-label="${escapeHtml(t("sortBy", { label }))}" aria-haspopup="menu" aria-expanded="${open}">${escapeHtml(t("sortBy", { label }))}${xStyle ? '<span class="sort-trigger-chevron" aria-hidden="true"></span>' : ""}</button>${menu}</div>`;
 }
 
 function renderArticleCard(item, { action = "", href = "", tags = "" } = {}) {
@@ -325,7 +328,7 @@ function renderAssets() {
   const tabs = [["all", t("all")], ["unused", t("unused")], ["used", t("used")]].map(([key, label]) => `<button class="${state.assetFilter === key ? "is-active" : ""}" data-filter="${key}" type="button">${escapeHtml(label)}<span class="asset-filter-count" aria-hidden="true">${counts[key]}</span></button>`).join("");
   const dialogAsset = state.data.assets.find((asset) => asset.id === state.assetDialog);
   const dialog = dialogAsset ? `<div class="asset-dialog-backdrop"><section class="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="asset-dialog-title"><h2 id="asset-dialog-title">${escapeHtml(t("deleteMaterialTitle"))}</h2><p>${escapeHtml(t("deleteIrreversible"))}</p><div class="asset-dialog-actions"><button class="secondary-button" data-action="asset-dialog-cancel" type="button">${escapeHtml(t("cancel"))}</button><button class="danger-button" data-action="asset-dialog-confirm" data-id="${escapeHtml(dialogAsset.id)}" type="button">${escapeHtml(t("delete"))}</button></div></section></div>` : "";
-  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">${escapeHtml(t("searchMaterials"))}</span>${searchIcon()}<input data-asset-search type="search" placeholder="${escapeHtml(t("searchMaterialsPlaceholder"))}" value="${escapeHtml(state.assetQuery)}" aria-label="${escapeHtml(t("searchMaterials"))}"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="${escapeHtml(t("materialCategory"))}">${tabs}</div>${sortControl("asset", state.assetSort, state.assetSortMenu)}</div></div>${assets.length ? assets.map(assetItem).join("") : `<p class="empty">${escapeHtml(t("emptyMaterials"))}</p>`}${dialog}`;
+  view.innerHTML = `<div class="asset-filters"><label class="panel-search"><span class="sr-only">${escapeHtml(t("searchMaterials"))}</span>${searchIcon()}<input data-asset-search type="search" placeholder="${escapeHtml(t("searchMaterialsPlaceholder"))}" value="${escapeHtml(state.assetQuery)}" aria-label="${escapeHtml(t("searchMaterials"))}"></label><div class="list-filter-toolbar"><div class="asset-filter-tabs" role="group" aria-label="${escapeHtml(t("materialCategory"))}">${tabs}</div>${sortControl("asset", state.assetSort, state.assetSortMenu, "x")}</div></div>${assets.length ? assets.map(assetItem).join("") : `<p class="empty">${escapeHtml(t("emptyMaterials"))}</p>`}${dialog}`;
   hydrateLocalImages().catch(() => {});
 }
 
