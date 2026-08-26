@@ -300,7 +300,7 @@ function assetItem(asset) {
   const tags = (asset.tags || []).map((tag) => `<span class="asset-tag"><span>${escapeHtml(tag)}</span><button data-action="asset-remove-tag" data-id="${escapeHtml(asset.id)}" data-tag="${escapeHtml(tag)}" type="button" aria-label="${escapeHtml(t("removeTag", { tag }))}">×</button></span>`).join("");
   const tagEditor = state.assetTagEditor === asset.id ? `<div class="asset-tag-editor asset-menu-editor"><input data-asset-tag-input data-id="${escapeHtml(asset.id)}" type="text" placeholder="${escapeHtml(t("addTagPlaceholder"))}" aria-label="${escapeHtml(t("addTag"))}"><button class="asset-icon-button" data-action="asset-add-tag" data-id="${escapeHtml(asset.id)}" type="button" aria-label="${escapeHtml(t("confirmAddTag"))}">${addIcon()}</button></div>` : "";
   const editorOpen = state.assetTagEditor === asset.id;
-  const menu = state.assetMenu === asset.id ? `<div class="asset-menu ${state.assetMenuPlacement === "up" ? "is-up" : ""}" ${editorOpen ? `role="dialog" aria-label="${escapeHtml(t("materialEditor"))}"` : 'role="menu"'}><a href="${escapeHtml(asset.sourceUrl)}" target="_blank" rel="noreferrer" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(openOriginalIcon())}<span>${escapeHtml(t("openOriginal"))}</span></a><button data-action="asset-tag-editor" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(editTagIcon())}<span>${escapeHtml(t("editTags"))}</span></button>${tagEditor}<button data-action="asset-toggle-used" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(usageStatusIcon(asset.usageStatus !== "used"))}<span>${escapeHtml(asset.usageStatus === "used" ? t("markUnused") : t("markUsed"))}</span></button><button class="is-destructive" data-action="asset-delete" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(deleteIcon())}<span>${escapeHtml(t("deleteMaterial"))}</span></button></div>` : "";
+  const menu = state.assetMenu === asset.id ? `<div class="asset-menu ${state.assetMenuPlacement === "up" ? "is-up" : ""}" ${editorOpen ? `role="dialog" aria-label="${escapeHtml(t("materialEditor"))}"` : 'role="menu"'}><a data-action="asset-open-original" data-id="${escapeHtml(asset.id)}" href="${escapeHtml(asset.sourceUrl)}" target="_blank" rel="noreferrer" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(openOriginalIcon())}<span>${escapeHtml(t("openOriginal"))}</span></a><button data-action="asset-tag-editor" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(editTagIcon())}<span>${escapeHtml(t("editTags"))}</span></button>${tagEditor}<button data-action="asset-toggle-used" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(usageStatusIcon(asset.usageStatus !== "used"))}<span>${escapeHtml(asset.usageStatus === "used" ? t("markUnused") : t("markUsed"))}</span></button><button class="is-destructive" data-action="asset-delete" data-id="${escapeHtml(asset.id)}" type="button" ${editorOpen ? "" : 'role="menuitem"'}>${menuItemIcon(deleteIcon())}<span>${escapeHtml(t("deleteMaterial"))}</span></button></div>` : "";
   const firstImage = (asset.blocks || []).find((block) => block.type === "image");
   const imageCount = (asset.blocks || []).filter((block) => block.type === "image").length;
   const coverUrl = firstImage?.imageId ? "" : firstImage?.url || asset.coverImageUrl;
@@ -308,8 +308,9 @@ function assetItem(asset) {
     ? `<span class="article-card-media post-card-media"><img ${firstImage?.imageId ? `data-local-image="${escapeHtml(firstImage.imageId)}"` : `src="${escapeHtml(coverUrl)}"`} alt="" />${imageCount > 1 ? `<span class="article-card-badge">${escapeHtml(t("imageCount", { count: imageCount }))}</span>` : ""}</span>`
     : "";
   const tagRow = tags ? `<span class="asset-tags-row" aria-label="${escapeHtml(t("tags"))}">${tags}</span>` : "";
+  const postContent = `<a class="post-card-copy" href="${escapeHtml(asset.sourceUrl)}" target="_blank" rel="noreferrer"><span class="post-card-text">${escapeHtml(asset.previewExcerpt || asset.markdown || asset.title || "")}</span>${postMedia}${asset.mediaNotice === "video" ? `<span class="post-media-notice">${escapeHtml(t("videoOriginalOnly"))}</span>` : ""}</a>`;
   const card = asset.contentType === "post"
-    ? `<div class="post-card-copy asset-post-card"><span class="post-card-text">${escapeHtml(asset.previewExcerpt || asset.markdown || asset.title || "")}</span>${postMedia}${asset.mediaNotice === "video" ? `<span class="post-media-notice">${escapeHtml(t("videoOriginalOnly"))}</span>` : ""}${tagRow}</div>`
+    ? `<div class="asset-post-card">${postContent}${tagRow}</div>`
     : renderArticleCard(asset, { href: asset.sourceUrl, tags: tagRow });
   return `<article class="article-post asset-post"><a class="article-avatar asset-avatar" href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(t("openProfile", { name: authorName }))}">${avatar}</a><div class="article-content"><div class="article-author asset-author"><strong>${escapeHtml(authorName)}${verifiedBadge(asset.authorVerificationType)}</strong><span class="article-handle">${escapeHtml(asset.authorHandle || "")}</span><span class="article-date">· ${escapeHtml(formatDate(asset.publishedAt))}</span><div class="asset-menu-anchor"><button class="article-more" data-action="asset-menu" data-id="${escapeHtml(asset.id)}" type="button" aria-label="${escapeHtml(t("materialActions"))}" aria-expanded="${state.assetMenu === asset.id}">${moreIcon()}</button>${menu}</div></div>${card}<footer class="asset-footer"><span class="asset-usage-status ${asset.usageStatus === "used" ? "is-used" : ""}">${escapeHtml(asset.usageStatus === "used" ? t("used") : t("unused"))}</span><button class="asset-preview-action" data-action="asset-preview" data-id="${escapeHtml(asset.id)}" type="button">${previewMarkdownIcon()}<span>${escapeHtml(t("previewMarkdown"))}</span></button></footer></div></article>`;
 }
@@ -355,6 +356,11 @@ async function updateAsset(asset, patch) {
   if (patch.usageStatus) next.materialState = patch.usageStatus === "used" ? "used" : "unused";
   if (patch.tags) next.tags = patch.tags;
   await send({ type: "update-content-item", itemId: asset.id, patch: next });
+}
+
+function closeAssetMenu() {
+  state.assetMenu = null;
+  state.assetTagEditor = null;
 }
 
 async function handleAction(action, target) {
@@ -410,7 +416,7 @@ async function handleAction(action, target) {
   const asset = state.data.assets.find((item) => item.id === target.dataset.id);
   if (action === "asset-sort-menu") {
     state.assetSortMenu = !state.assetSortMenu;
-    state.assetMenu = null;
+    closeAssetMenu();
     renderAssets();
     return;
   }
@@ -422,7 +428,10 @@ async function handleAction(action, target) {
   }
   if (action === "asset-menu") {
     const opening = state.assetMenu !== target.dataset.id;
-    state.assetMenu = opening ? target.dataset.id : null;
+    if (opening) {
+      state.assetMenu = target.dataset.id;
+      state.assetTagEditor = null;
+    } else closeAssetMenu();
     state.assetSortMenu = false;
     state.assetMenuPlacement = opening && target.getBoundingClientRect().bottom + 260 > window.innerHeight ? "up" : "down";
     render();
@@ -441,9 +450,10 @@ async function handleAction(action, target) {
     await send({ type: "open-content-reader", itemId: asset.id });
     return;
   }
+  if (action === "asset-open-original") { closeAssetMenu(); render(); return; }
   if (action === "asset-toggle-used") {
     await updateAsset(asset, { usageStatus: asset.usageStatus === "used" ? "unused" : "used" });
-    state.assetMenu = null;
+    closeAssetMenu();
     return;
   }
   if (action === "asset-tag-editor") { state.assetTagEditor = state.assetTagEditor === asset.id ? null : asset.id; render(); return; }
@@ -453,19 +463,20 @@ async function handleAction(action, target) {
     if (!tag) { input?.focus(); return; }
     if ((asset.tags || []).some((value) => value.toLowerCase() === tag.toLowerCase())) { setStatus(t("tagExists")); return; }
     await updateAsset(asset, { tags: [...(asset.tags || []), tag] });
-    state.assetTagEditor = null;
+    closeAssetMenu();
     return;
   }
   if (action === "asset-remove-tag") {
     await updateAsset(asset, { tags: (asset.tags || []).filter((tag) => tag !== target.dataset.tag) });
+    closeAssetMenu();
     return;
   }
-  if (action === "asset-delete") { state.assetDialog = asset.id; state.assetMenu = null; render(); }
+  if (action === "asset-delete") { state.assetDialog = asset.id; closeAssetMenu(); render(); }
 }
 
 document.addEventListener("click", async (event) => {
   const tab = event.target.closest("[data-view]");
-  if (tab) { state.page = tab.dataset.view; state.readingSortMenu = false; state.readingMenu = null; state.assetSortMenu = false; state.assetMenu = null; render(); return; }
+  if (tab) { state.page = tab.dataset.view; state.readingSortMenu = false; state.readingMenu = null; state.assetSortMenu = false; closeAssetMenu(); render(); return; }
   const filter = event.target.closest("[data-filter]");
   if (filter) { state.assetFilter = filter.dataset.filter; state.assetSortMenu = false; renderAssets(); return; }
   const readingFilter = event.target.closest("[data-reading-filter]");
@@ -475,7 +486,7 @@ document.addEventListener("click", async (event) => {
     if (state.readingSortMenu && !event.target.closest(".sort-menu-anchor")) { state.readingSortMenu = false; render(); return; }
     if (state.assetSortMenu && !event.target.closest(".sort-menu-anchor")) { state.assetSortMenu = false; render(); return; }
     if (state.readingMenu && !event.target.closest(".asset-menu")) { state.readingMenu = null; render(); return; }
-    if (state.assetMenu && !event.target.closest(".asset-menu")) { state.assetMenu = null; render(); }
+    if (state.assetMenu && !event.target.closest(".asset-menu")) { closeAssetMenu(); render(); }
     return;
   }
   try { await handleAction(action.dataset.action, action); }
@@ -528,9 +539,8 @@ document.addEventListener("keydown", (event) => {
   if (state.readingDialog) state.readingDialog = null;
   if (state.readingMenu) state.readingMenu = null;
   if (state.assetDialog) state.assetDialog = null;
-  if (state.assetMenu) state.assetMenu = null;
+  if (state.assetMenu || state.assetTagEditor) closeAssetMenu();
   if (state.assetSortMenu) state.assetSortMenu = false;
-  if (state.assetTagEditor) state.assetTagEditor = null;
   render();
 });
 

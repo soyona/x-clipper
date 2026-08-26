@@ -144,9 +144,9 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .asset-preview-action { display: inline-flex; min-height: 34px; align-items: center; gap: 6px; margin-left: auto; padding: 0 14px; border: 0; border-radius: var(--twitter-radius-pill); background: transparent; color: var(--x-blue); font-size: 14px; font-weight: 700; }
 .asset-preview-action svg { width: 18.75px; height: 18.75px; flex: 0 0 18.75px; }
 .asset-preview-action:hover { background: rgba(29, 155, 240, .1); }
-.asset-menu { position: absolute; top: 34px; right: -4px; z-index: 5; min-width: 184px; overflow: hidden; border: 1px solid var(--x-border); border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(15, 20, 25, .15); }
+.asset-menu { position: absolute; top: 34px; right: -4px; z-index: 5; min-width: 240px; overflow: hidden; border: 1px solid var(--x-border); border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(15, 20, 25, .15); }
 .asset-menu.is-up { top: auto; bottom: 26px; }
-.asset-menu button, .asset-menu a { display: flex; width: 100%; min-height: 44px; align-items: center; padding: 0 16px; border: 0; background: #fff; color: var(--x-primary); font-size: 15px; font-weight: 700; text-align: left; text-decoration: none; }
+.asset-menu button, .asset-menu a { display: flex; width: 100%; min-height: 44px; align-items: center; padding: 0 16px; border: 0; background: #fff; color: var(--x-primary); font-size: 15px; font-weight: 700; text-align: left; text-decoration: none; white-space: nowrap; }
 .asset-menu button:hover, .asset-menu a:hover { background: var(--x-hover); }
 .asset-menu-item-icon { display: grid; width: 24px; height: 24px; flex: 0 0 24px; margin-right: 12px; place-items: center; color: currentColor; }
 .asset-menu-item-icon svg { display: block; width: 24px; height: 24px; }
@@ -163,7 +163,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .empty { margin: 0; padding: 32px 20px; color: var(--x-secondary); font-size: 15px; line-height: 20px; text-align: center; }
 
 .article-card:is(button) { padding: 0; font: inherit; text-align: left; cursor: pointer; appearance: none; }
-.post-card-copy { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.post-card-copy { width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
 .post-card-copy { display: grid; gap: 12px; padding-top: 4px; }
 .asset-post-card { margin-top: 8px; }
 .post-card-text { display: -webkit-box; overflow: hidden; font-size: 15px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }

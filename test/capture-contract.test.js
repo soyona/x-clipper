@@ -312,13 +312,15 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.match(script, /function renderArticleCard\(item,/u);
   assert.match(script, /renderArticleCard\(item, \{ action: "reading-open" \}\)/u);
   assert.match(script, /asset\.contentType === "post"/u);
-  assert.match(script, /post-card-copy asset-post-card/u);
+  assert.match(script, /const postContent = `<a class="post-card-copy" href="\$\{escapeHtml\(asset\.sourceUrl\)\}" target="_blank" rel="noreferrer">/u);
+  assert.match(script, /<div class="asset-post-card">\$\{postContent\}\$\{tagRow\}<\/div>/u);
   assert.match(script, /renderArticleCard\(asset, \{ href: asset\.sourceUrl, tags: tagRow \}\)/u);
   assert.doesNotMatch(script, /article-card-button|asset-card-media|asset-card-body/u);
   assert.match(script, /const coverUrl = item\.coverImageUrl \|\| coverBlock\?\.url \|\| ""/u);
   assert.match(css, /\.article-card-media img \{[^}]*object-fit: contain/u);
   assert.match(css, /\.article-card:is\(button\) \{[^}]*appearance: none/u);
   assert.match(css, /\.post-card-text[^}]*-webkit-line-clamp: 4/u);
+  assert.match(css, /\.post-card-copy \{[^}]*text-decoration: none;/u);
   assert.match(css, /\.asset-post-card \{ margin-top: 8px; \}/u);
   assert.match(script, /format: "x-clipper-backup", version: 1/u);
   assert.match(script, /data-action="backup-export"/u);
@@ -329,6 +331,24 @@ test("Side Panel 只有待读、素材库和作者三个一级页面", () => {
   assert.match(script, /data-asset-tag-input/u);
   assert.match(script, /https:\/\/x\.com\/\$\{value\}/u);
   assert.doesNotMatch(`${html}\n${script}`, /候选集|关注作者|统计|导航设置|发布链接|publishedLinks|materialize/u);
+});
+
+test("素材标签保存成功后关闭编辑菜单", () => {
+  const script = source("../sidepanel.js");
+  assert.match(script, /await updateAsset\(asset, \{ tags: \[\.\.\.\(asset\.tags \|\| \[\]\), tag\] \}\);\s*closeAssetMenu\(\);/u);
+});
+
+test("素材菜单动作统一关闭，编辑标签保留输入界面", () => {
+  const script = source("../sidepanel.js");
+  const css = source("../sidepanel.css");
+  assert.match(script, /<a data-action="asset-open-original"[^>]*target="_blank" rel="noreferrer"/u);
+  assert.match(script, /if \(action === "asset-open-original"\) \{ closeAssetMenu\(\); render\(\); return; \}/u);
+  assert.match(script, /if \(action === "asset-toggle-used"\) \{\s*await updateAsset[\s\S]*?closeAssetMenu\(\);/u);
+  assert.match(script, /if \(action === "asset-remove-tag"\) \{\s*await updateAsset[\s\S]*?closeAssetMenu\(\);/u);
+  assert.match(script, /if \(action === "asset-delete"\) \{ state\.assetDialog = asset\.id; closeAssetMenu\(\); render\(\); \}/u);
+  assert.match(script, /if \(action === "asset-tag-editor"\) \{ state\.assetTagEditor = state\.assetTagEditor === asset\.id \? null : asset\.id; render\(\); return; \}/u);
+  assert.match(css, /\.asset-menu \{[^}]*min-width: 240px;/u);
+  assert.match(css, /\.asset-menu button, \.asset-menu a \{[^}]*white-space: nowrap;/u);
 });
 
 test("Preview 支持统一内容本地阅读与旧版临时预览", () => {
